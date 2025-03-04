@@ -16,14 +16,14 @@ on:
 
 jobs:
   app-test:
-    uses: EyeSeeTea/github-workflows/.github/workflows/app-test.yml@main
+    uses: EyeSeeTea/github-workflows/.github/workflows/app-test.yml@master
 
   codeql-analysis:
-    uses: EyeSeeTea/github-workflows/.github/workflows/codeql.yml@main
+    uses: EyeSeeTea/github-workflows/.github/workflows/codeql.yml@master
     with:
       languages: ${{ inputs.languages }}
       build_mode: ${{ inputs.build_mode }}
 
   pr-build-diff:
-    uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-build-size.yml@main
+    uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-build-size.yml@master
 
