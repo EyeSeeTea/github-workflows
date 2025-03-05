@@ -1,0 +1,29 @@
+name: "Master Workflow"
+
+on:
+  workflow_call:
+    inputs:
+      languages:
+        description: "Languages to analyze"
+        required: false
+        default: '["javascript-typescript"]'
+        type: string
+      build_mode:
+        description: "Build mode for CodeQL analysis"
+        required: false
+        default: '["none"]'
+        type: string
+
+jobs:
+  app-test:
+    uses: EyeSeeTea/github-workflows/.github/workflows/app-test.yml@master
+
+  codeql-analysis:
+    uses: EyeSeeTea/github-workflows/.github/workflows/codeql.yml@master
+    with:
+      languages: ${{ inputs.languages }}
+      build_mode: ${{ inputs.build_mode }}
+
+  pr-build-diff:
+    uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-build-size.yml@master
+

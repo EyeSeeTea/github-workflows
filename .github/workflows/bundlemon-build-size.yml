@@ -1,11 +1,7 @@
 name: "PR Build Diff"
 
 on:
-  push:
-    branches: ["master", "development"]
-  pull_request:
-    branches: [ "master", "development" ]
-  workflow_dispatch:
+  workflow_call:
 
 jobs:
   build-size-check:
@@ -30,6 +26,24 @@ jobs:
           yarn install
           yarn build
 
+      # Check if .bundlemonrc exists in the caller repo
+      - name: Check for .bundlemonrc in caller repo
+        id: check_bundlemonrc
+        run: |
+          if [ -f ".bundlemonrc" ]; then
+            echo "Using .bundlemonrc from caller repo"
+            echo "USE_CALLER_CONFIG=true" >> $GITHUB_ENV
+          else
+            echo "No .bundlemonrc in caller repo, using default from workflow repo"
+            echo "USE_CALLER_CONFIG=false" >> $GITHUB_ENV
+          fi
+
+      # Download default .bundlemonrc from workflow repo if needed
+      - name: Use default .bundlemonrc from workflow repo
+        if: env.USE_CALLER_CONFIG == 'false'
+        run: |
+          curl -o .bundlemonrc https://raw.githubusercontent.com/gqcorneby/workflows/main/.bundlemonrc
+
+
       - name: BundleMon
         uses: lironer/bundlemon-action@v1
-
