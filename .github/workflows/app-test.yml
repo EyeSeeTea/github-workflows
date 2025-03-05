@@ -1,12 +1,11 @@
-name: Application Testing
-
+name: Application testing
 on:
-  workflow_call:
-
+  push:
+  workflow_dispatch:
 jobs:
   unit-tests:
-    name: Unit Tests
-    runs-on: self-hosted
+    name: Unit tests
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -14,23 +13,23 @@ jobs:
       - name: Install apt libraries
         run: sudo apt install gettext -y
 
-      - name: Setup Node.js version from .nvmrc
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version-file: ".nvmrc"
+          node-version: "16.14.0"
 
-      - name: Install Yarn
+      - name: Install yarn
         run: npm install -g yarn
 
-      - name: Get Yarn cache directory path
+      - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_ENV
+        run: echo "::set-output name=dir::$(yarn cache dir)"
 
-      - name: Cache Yarn dependencies
+      - name: Cache yarn dependencies
         uses: actions/cache@v3
         id: yarn-cache
         with:
-          path: ${{ env.YARN_CACHE_DIR }}
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
@@ -41,8 +40,8 @@ jobs:
       - name: Install translations
         run: yarn localize
 
-      - name: Run Jest tests
+      - name: Run jest tests
         run: yarn test
 
-      - name: Run TypeScript checks
+      - name: Run typescript tests
         run: npx tsc
