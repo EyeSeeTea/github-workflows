@@ -43,16 +43,17 @@ jobs:
       - name: Use default .bundlemonrc from workflow repo
         if: env.USE_CALLER_CONFIG == 'false'
         run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          URL=https://raw.githubusercontent.com/eyeseetea/github-workflows/${BRANCH_NAME}/.bundlemonrc
+          BRANCH_NAME=${GITHUB_ACTION_REF:-master}  # Use GITHUB_ACTION_REF, fallback to master
+          URL=https://raw.githubusercontent.com/EyeSeeTea/github-workflows/${BRANCH_NAME}/.bundlemonrc
 
-          # Try fetching from the current branch
+          # Try fetching from the current branch of the workflow repo
           if curl --silent --fail -o .bundlemonrc "$URL"; then
             echo "✅ Using .bundlemonrc from branch ${BRANCH_NAME}"
           else
             echo "⚠️ .bundlemonrc not found in ${BRANCH_NAME}, falling back to master"
-            curl -o .bundlemonrc https://raw.githubusercontent.com/eyeseetea/github-workflows/master/.bundlemonrc
+            curl -o .bundlemonrc https://raw.githubusercontent.com/EyeSeeTea/github-workflows/master/.bundlemonrc
           fi
+      
       
       
 
