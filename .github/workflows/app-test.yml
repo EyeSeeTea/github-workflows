@@ -1,4 +1,4 @@
-name: Application testing
+name: "Application testing"
 on:
   workflow_call:
 

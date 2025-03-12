@@ -1,4 +1,4 @@
-name: "PR Build Diff"
+name: "Build size check"
 
 on:
   workflow_call:
