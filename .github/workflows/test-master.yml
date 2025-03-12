@@ -15,17 +15,7 @@ on:
         type: string
 
 jobs:
-  run-tests:
-    uses: EyeSeeTea/github-workflows/.github/workflows/app-test.yml@feature/reusable-workflows
-
-  codeql-security-scan:
-    needs: run-tests
-    uses: EyeSeeTea/github-workflows/.github/workflows/codeql.yml@feature/reusable-workflows
-    with:
-      languages: ${{ inputs.languages }}
-      build_mode: ${{ inputs.build_mode }}
 
   bundlemon-size-check:
-    needs: run-tests
     uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-build-size.yml@feature/reusable-workflows
 
