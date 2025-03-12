@@ -2,6 +2,11 @@ name: "Build size check"
 
 on:
   workflow_call:
+    inputs:
+      branch_name:
+        required: false
+        default: "master"
+        type: string
 
 jobs:
   build-size-check:
@@ -12,14 +17,6 @@ jobs:
       # Check out base (target) branch at the commit where the PR branched off
       - name: Check out base branch
         uses: actions/checkout@v4
-
-      # Set up Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          # Use the Node.js version specified in the .nvmrc file
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
 
       # Check if .bundlemonrc exists in the caller repo
       - name: Check for .bundlemonrc in caller repo
@@ -33,21 +30,25 @@ jobs:
             echo "USE_CALLER_CONFIG=false" >> $GITHUB_ENV
           fi
 
-      # Copy default .bundlemonrc from the reusable workflow repo if needed
-      - name: Check for .bundlemonrc in reusable workflow repo
+      # Fetch .bundlemonrc from the workflow repo branch if needed
+      - name: Fetch .bundlemonrc from reusable workflow repo
+        if: env.USE_CALLER_CONFIG == 'false'
         run: |
-          WORKFLOW_REPO_PATH="$(dirname "${GITHUB_ACTION_PATH}")/.bundlemonrc"
-
-          if [ -f "${WORKFLOW_REPO_PATH}" ]; then
-            cp "${WORKFLOW_REPO_PATH}" .bundlemonrc
-            echo "✅ Using .bundlemonrc from reusable workflow repo"
+          echo "Downloading .bundlemonrc from EyeSeeTea/github-workflows (branch: ${{ inputs.branch_name }})"
+          BUNDLEMON_URL="https://raw.githubusercontent.com/EyeSeeTea/github-workflows/${{ inputs.branch_name }}/.bundlemonrc"
+          if curl --silent --fail --output .bundlemonrc "$BUNDLEMON_URL"; then
+            echo "✅ Successfully downloaded .bundlemonrc"
           else
-            echo "❌ No .bundlemonrc found in reusable workflow repo. Skipping build size check."
+            echo "❌ Failed to fetch .bundlemonrc from the reusable workflow repo. Skipping build size check."
             exit 1
           fi
-      
-      
-      
+
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'  # Use the Node.js version specified in .nvmrc
+          cache: 'yarn'
 
       # Install and build
       - name: Install and build
