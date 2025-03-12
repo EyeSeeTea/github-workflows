@@ -13,9 +13,16 @@ on:
         required: false
         default: "none"
         type: string
+      bundlemonrc_branch_name:
+        description: "Branch where to fetch bunlemonrc"
+        required: false
+        default: "master"
+        type: string
 
 jobs:
 
   bundlemon-size-check:
     uses: ./.github/workflows/bundlemon-build-size.yml
+    with:
+      branch_name: ${{ inputs.bundlemonrc_branch_name }}
 
