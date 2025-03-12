@@ -1,0 +1,47 @@
+name: Test Reusable Workflows
+
+on:
+  push:
+    branches:
+      - '*'  # Runs on all branches
+  workflow_dispatch:  # Allows manual execution from GitHub Actions UI
+
+jobs:
+  prepare-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true  # Needed to push changes
+
+      - name: Get current branch name
+        run: echo "BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+
+      - name: Copy master.yml to master-test.yml
+        run: cp .github/workflows/master.yml .github/workflows/test-master.yml
+
+      - name: Replace @master with @${{ env.BRANCH }}
+        run: sed -i "s/@master/@${{ env.BRANCH }}/g" .github/workflows/master-test.yml
+
+      - name: Check for changes
+        id: git-status
+        run: |
+          if git diff --quiet .github/workflows/master-test.yml; then
+            echo "CHANGED=false" >> $GITHUB_ENV
+          else
+            echo "CHANGED=true" >> $GITHUB_ENV
+          fi
+
+      - name: Commit and push master-test.yml (if changed)
+        if: env.CHANGED == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/master-test.yml
+          git commit -m "Update master-test.yml for branch ${{ env.BRANCH }}"
+          git push origin ${{ env.BRANCH }}
+
+      - name: Show confirmation
+        run: echo "master-test.yml is now available on branch ${{ env.BRANCH }}"
+
