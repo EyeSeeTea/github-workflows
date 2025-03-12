@@ -23,7 +23,7 @@ jobs:
         run: cp .github/workflows/master.yml .github/workflows/test-master.yml
 
       - name: Replace @master with @${{ env.BRANCH }}
-        run: sed -i "s/@master/@${{ env.BRANCH }}/g" .github/workflows/master-test.yml
+        run: sed -i "s#@master#@feature/reusable-workflows#g" .github/workflows/master-test.yml
 
       - name: Check for changes
         id: git-status
