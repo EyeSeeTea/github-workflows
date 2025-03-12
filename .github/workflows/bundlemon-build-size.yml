@@ -33,27 +33,18 @@ jobs:
             echo "USE_CALLER_CONFIG=false" >> $GITHUB_ENV
           fi
 
-      # Download default .bundlemonrc from workflow repo if needed
+      # Copy default .bundlemonrc from the reusable workflow repo if needed
       - name: Use default .bundlemonrc from workflow repo
         if: env.USE_CALLER_CONFIG == 'false'
         run: |
-          BRANCH_NAME=${{ github.action_ref || 'master' }}  # Get reusable workflow's branch
-          URL="https://raw.githubusercontent.com/EyeSeeTea/github-workflows/${BRANCH_NAME}/.bundlemonrc"
-
-          if curl --silent --fail -o .bundlemonrc "$URL"; then
-            echo "✅ Using .bundlemonrc from branch ${BRANCH_NAME}"
+          if [ -f "${{ github.action_path }}/../../.bundlemonrc" ]; then
+            cp "${{ github.action_path }}/../../.bundlemonrc" .bundlemonrc
+            echo "✅ Using .bundlemonrc from reusable workflow repo"
           else
-            echo "⚠️ .bundlemonrc not found in ${BRANCH_NAME}, falling back to master"
-            curl -o .bundlemonrc https://raw.githubusercontent.com/EyeSeeTea/github-workflows/master/.bundlemonrc
-          fi
-
-      # Final check: If .bundlemonrc still doesn't exist, exit early
-      - name: Ensure .bundlemonrc exists before proceeding
-        run: |
-          if [ ! -f ".bundlemonrc" ]; then
-            echo "❌ No .bundlemonrc found. Skipping build size check."
+            echo "❌ No .bundlemonrc found in reusable workflow repo. Skipping build size check."
             exit 0
           fi
+
 
       # Install and build
       - name: Install and build
