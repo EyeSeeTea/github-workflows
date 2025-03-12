@@ -1,0 +1,38 @@
+name: "Master Workflow"
+
+on:
+  workflow_call:
+    inputs:
+      languages:
+        description: "Languages to analyze"
+        required: false
+        default: '["javascript-typescript"]'
+        type: string
+      build_mode:
+        description: "Build mode for CodeQL analysis"
+        required: false
+        default: "none"
+        type: string
+      bundlemonrc_branch_name:
+        description: "Branch where to fetch bunlemonrc" # couldn't find a way to get the workflow branch from caller. Need to pass for testing
+        required: false
+        default: "master"
+        type: string
+
+jobs:
+  run-tests:
+    uses: ./.github/workflows/app-test.yml
+
+  codeql-security-scan:
+    needs: run-tests
+    uses: ./.github/workflows/codeql.yml
+    with:
+      languages: ${{ inputs.languages }}
+      build_mode: ${{ inputs.build_mode }}
+
+  bundlemon-size-check:
+    needs: run-tests
+    uses: ./.github/workflows/bundlemon-build-size.yml
+    with:
+      branch_name: ${{ inputs.bundlemonrc_branch_name }}
+
