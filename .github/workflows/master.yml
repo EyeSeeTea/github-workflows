@@ -27,5 +27,5 @@ jobs:
 
   bundlemon-size-check:
     needs: run-tests
-    uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-size-check.yml@master
+    uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-build-size.yml@master
 
