@@ -17,5 +17,5 @@ on:
 jobs:
 
   bundlemon-size-check:
-    uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-build-size.yml@feature/reusable-workflows
+    uses: ./.github/workflows/bundlemon-build-size.yml
 
