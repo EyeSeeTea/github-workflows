@@ -3,11 +3,6 @@ name: "Master Workflow"
 on:
   workflow_call:
     inputs:
-      branch:
-        description: "Branch to use for testing"
-        required: false
-        default: "master"
-        type: string
       languages:
         description: "Languages to analyze"
         required: false
@@ -21,15 +16,16 @@ on:
 
 jobs:
   run-tests:
-    uses: EyeSeeTea/github-workflows/.github/workflows/app-test.yml@${{ inputs.branch }}
+    uses: EyeSeeTea/github-workflows/.github/workflows/app-test.yml@master
 
   codeql-security-scan:
     needs: run-tests
-    uses: EyeSeeTea/github-workflows/.github/workflows/codeql.yml@${{ inputs.branch }}
+    uses: EyeSeeTea/github-workflows/.github/workflows/codeql.yml@master
     with:
       languages: ${{ inputs.languages }}
       build_mode: ${{ inputs.build_mode }}
 
   bundlemon-size-check:
     needs: run-tests
-    uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-build-size.yml@${{ inputs.branch }}
+    uses: EyeSeeTea/github-workflows/.github/workflows/bundlemon-build-size.yml@master
+
