@@ -14,7 +14,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          persist-credentials: true  # Needed to push changes
+          fetch-depth: 0  # Ensure full history
+          ref: ${{ github.ref_name }}  # Checkout the current branch
 
       - name: Get current branch name
         run: echo "BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
