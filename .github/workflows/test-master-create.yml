@@ -3,7 +3,8 @@ name: Test Reusable Workflows
 on:
   push:
     branches:
-      - '*'  # Runs on all branches
+      - feature/*
+      - '**'
   workflow_dispatch:  # Allows manual execution from GitHub Actions UI
 
 jobs:
