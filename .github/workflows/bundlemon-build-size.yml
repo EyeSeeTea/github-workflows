@@ -43,8 +43,18 @@ jobs:
       - name: Use default .bundlemonrc from workflow repo
         if: env.USE_CALLER_CONFIG == 'false'
         run: |
-          curl -o .bundlemonrc https://raw.githubusercontent.com/gqcorneby/workflows/main/.bundlemonrc
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          URL=https://raw.githubusercontent.com/eyeseetea/github-workflows/${BRANCH_NAME}/.bundlemonrc
 
+          # Try fetching from the current branch
+          if curl --silent --fail -o .bundlemonrc "$URL"; then
+            echo "✅ Using .bundlemonrc from branch ${BRANCH_NAME}"
+          else
+            echo "⚠️ .bundlemonrc not found in ${BRANCH_NAME}, falling back to master"
+            curl -o .bundlemonrc https://raw.githubusercontent.com/eyeseetea/github-workflows/master/.bundlemonrc
+          fi
+      
+      
 
       - name: BundleMon
         uses: lironer/bundlemon-action@v1
