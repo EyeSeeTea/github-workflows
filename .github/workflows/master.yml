@@ -18,13 +18,19 @@ on:
         required: false
         default: "master"
         type: string
+      runner:
+        description: "Specify runner. Defaults to checking visibility"
+        required: false
+        type: string
 
 jobs:
   run-tests:
+    runs-on: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
     uses: ./.github/workflows/app-test.yml
 
   codeql-security-scan:
     needs: run-tests
+    runs-on: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
     uses: ./.github/workflows/codeql.yml
     with:
       languages: ${{ inputs.languages }}
@@ -32,6 +38,7 @@ jobs:
 
   bundlemon-size-check:
     needs: run-tests
+    runs-on: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
     uses: ./.github/workflows/bundlemon-build-size.yml
     with:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
