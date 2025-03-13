@@ -19,6 +19,9 @@ jobs:
       - name: Check out base branch
         uses: actions/checkout@v4
 
+      - name: Install apt libraries
+        run: sudo apt install gettext -y
+
       # Check if .bundlemonrc exists in the caller repo
       - name: Check for .bundlemonrc in caller repo
         id: check_bundlemonrc
