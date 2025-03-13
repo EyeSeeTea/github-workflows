@@ -50,9 +50,10 @@ jobs:
     permissions:
       # required for all workflows
       security-events: write
-      contents: read
       # required to fetch internal or private CodeQL packs
       packages: read
+      contents: read  # Ensures repo contents are accessible
+      pull-requests: write  # Needed for PR interactions
 
     strategy:
       fail-fast: false
