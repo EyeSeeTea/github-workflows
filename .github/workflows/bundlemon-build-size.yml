@@ -8,11 +8,16 @@ on:
         required: false
         default: "master"
         type: string
+      runner:
+        description: "Specify runner. Defaults to checking visibility"
+        required: false
+        default: "self-hosted"
+        type: string
 
 jobs:
   build-size-check:
     name: Bundlemon Build Size Check
-    runs-on: self-hosted
+    runs-on: ${{ inputs.runner }}
 
     steps:
       # Check out base (target) branch at the commit where the PR branched off

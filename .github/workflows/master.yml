@@ -25,21 +25,22 @@ on:
 
 jobs:
   run-tests:
-    runs-on: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
     uses: ./.github/workflows/app-test.yml
+    with:
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
 
   codeql-security-scan:
     needs: run-tests
-    runs-on: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
     uses: ./.github/workflows/codeql.yml
     with:
       languages: ${{ inputs.languages }}
       build_mode: ${{ inputs.build_mode }}
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
 
   bundlemon-size-check:
     needs: run-tests
-    runs-on: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
     uses: ./.github/workflows/bundlemon-build-size.yml
     with:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
 
