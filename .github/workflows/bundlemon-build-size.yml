@@ -11,7 +11,7 @@ on:
       runner:
         description: "Specify runner. Defaults to checking visibility"
         required: false
-        default: "self-hosted"
+        default: "ubuntu-latest"
         type: string
 
 jobs:

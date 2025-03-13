@@ -35,7 +35,7 @@ on:
       runner:
         description: "Specify runner. Defaults to checking visibility"
         required: false
-        default: "self-hosted"
+        default: "ubuntu-latest"
         type: string
 
 jobs:
@@ -50,7 +50,7 @@ jobs:
     permissions:
       # required for all workflows
       security-events: write
-
+      contents: read
       # required to fetch internal or private CodeQL packs
       packages: read
 
