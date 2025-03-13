@@ -37,7 +37,6 @@ jobs:
 
   codeql-scan:
     if: contains(inputs.workflows_to_run, 'codeql-scan') || contains(inputs.workflows_to_run, 'all')
-    needs: run-tests
     uses: ./.github/workflows/codeql.yml
     with:
       languages: ${{ inputs.languages }}
@@ -46,7 +45,6 @@ jobs:
 
   build-check:
     if: contains(inputs.workflows_to_run, 'build-check') || contains(inputs.workflows_to_run, 'all')
-    needs: run-tests
     uses: ./.github/workflows/bundlemon-build-size.yml
     with:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
