@@ -54,6 +54,7 @@ jobs:
       packages: read
       contents: read  # Ensures repo contents are accessible
       pull-requests: write  # Needed for PR interactions
+      id-token: write  # Important for private repositories
 
     strategy:
       fail-fast: false
