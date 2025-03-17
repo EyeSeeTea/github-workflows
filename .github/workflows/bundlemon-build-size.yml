@@ -59,6 +59,12 @@ jobs:
           node-version-file: '.nvmrc'  # Use the Node.js version specified in .nvmrc
           cache: 'yarn'
 
+      # Install and build
+      - name: Install and build
+        run: |
+          yarn install --frozen-lockfile --silent
+          yarn build
+
       #install bundlemon
       - name: Install dependencies (including BundleMon)
         run: |
@@ -68,12 +74,7 @@ jobs:
           else
             echo "✅ BundleMon is already installed"
           fi
-
-      # Install and build
-      - name: Install and build
-        run: |
-          yarn install --frozen-lockfile --silent
-          yarn build
+          
 
       - name: Run BundleMon
         id: bundlemon
