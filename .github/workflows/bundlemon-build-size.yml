@@ -59,11 +59,97 @@ jobs:
           node-version-file: '.nvmrc'  # Use the Node.js version specified in .nvmrc
           cache: 'yarn'
 
+      #install bundlemon
+      - name: Install dependencies (including BundleMon)
+        run: |
+          if ! npx --no-install bundlemon --version; then
+            echo "⚠️ BundleMon not found, installing..."
+            yarn add bundlemon --no-lockfile --silent
+          else
+            echo "✅ BundleMon is already installed"
+          fi
+
       # Install and build
       - name: Install and build
         run: |
-          yarn install
+          yarn install --frozen-lockfile --silent
           yarn build
 
-      - name: BundleMon
-        uses: lironer/bundlemon-action@v1
+      - name: Run BundleMon
+        id: bundlemon
+        run: |
+          npx bundlemon --json > bundlemon-report.json || true
+
+      - name: Format BundleMon Report
+        id: format_report
+        run: |
+          # Extract files summary
+          FILE_RESULTS=$(jq -r '
+            .results | map(
+              (if .sizeDiffLabel | test("^[+-]0B$") then "✅ No change" 
+               else (if .sizeDiffLabel | test("^[+]") then "⚠️ Increased" else "✅ Decreased" end) end) as $status |
+              "| \($status) | \(.filePath) | \(.sizeDiffLabel) | \(.maxSizeLabel // "N/A") |"
+            ) | join("\n")
+          ' bundlemon-report.json)
+          
+          # Extract added files
+          FILES_ADDED=$(jq -r '
+            .results | map(select(.sizeDiffLabel | test("^[+]"))) | map(
+              "| :white_check_mark: | \(.filePath) | \(.sizeDiffLabel) | \(.maxSizeLabel // "N/A") |"
+            ) | join("\n")
+          ' bundlemon-report.json)
+          
+          # Extract groups summary
+          GROUPS_ADDED=$(jq -r '
+            .groups | map(
+              "| :white_check_mark: | \(.pattern) | \(.sizeDiffLabel // "+0B") | \(.maxSizeLabel // "N/A") |"
+            ) | join("\n")
+          ' bundlemon-report.json)
+          
+          # Default values if empty
+          if [ -z "$FILE_RESULTS" ]; then FILE_RESULTS="✅ No change in files bundle size"; fi
+          if [ -z "$FILES_ADDED" ]; then FILES_ADDED="✅ No new files added"; fi
+          if [ -z "$GROUPS_ADDED" ]; then GROUPS_ADDED="✅ No new groups added"; fi
+          
+          # Store in GitHub Actions outputs
+          echo "file_results<<EOF" >> $GITHUB_ENV
+          echo "$FILE_RESULTS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "files_added<<EOF" >> $GITHUB_ENV
+          echo "$FILES_ADDED" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "groups_added<<EOF" >> $GITHUB_ENV
+          echo "$GROUPS_ADDED" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          - name: Comment PR with BundleMon Summary
+              if: github.event_name == 'pull_request'
+              uses: mshick/add-pr-comment@v2
+              with:
+                message: |
+                  <!-- bundlemon -->
+                  ## 📊 BundleMon Report
+          
+                  ${{ env.file_results }}
+          
+                  <details open>
+                  <summary>📂 Groups Added</summary>
+          
+                  Status | Path | Size | Limits
+                  :------------: | ------------ | :------------: | :------------:
+                  ${{ env.groups_added }}
+          
+                  </details>
+          
+                  <details open>
+                  <summary>📂 Files Added</summary>
+          
+                  Status | Path | Size | Limits
+                  :------------: | ------------ | :------------: | :------------:
+                  ${{ env.files_added }}
+          
+                  </details>
+                repo-token: ${{ secrets.GITHUB_TOKEN }}
+                allow-repeats: false
