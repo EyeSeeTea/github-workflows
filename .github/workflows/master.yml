@@ -40,10 +40,9 @@ jobs:
     uses: ./.github/workflows/codeql.yml
     permissions:
       security-events: write
-      contents: read
       packages: read
-      pull-requests: write
-      id-token: write
+      contents: read
+      actions: read
     secrets: inherit
     with:
       languages: ${{ inputs.languages }}
