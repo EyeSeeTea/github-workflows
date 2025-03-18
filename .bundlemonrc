@@ -9,14 +9,4 @@
             "maxPercentIncrease": "20"
         }
     ],
-    "reportOutput": [
-        [
-            "github",
-            {
-                "checkRun": true,
-                "commitStatus": true,
-                "prComment": true
-            }
-        ]
-    ]
 }

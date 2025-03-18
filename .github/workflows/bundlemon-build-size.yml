@@ -91,13 +91,18 @@ jobs:
           echo "" >> bundlemon_comment.txt
           echo "| Status | Path | Size | Limit |" >> bundlemon_comment.txt
           echo "|:------:|------|:----:|:-----:|" >> bundlemon_comment.txt
-          
-          # Extract relevant lines, only those below "Groups:"
-          awk '/Groups:/ { found=1; next } found && /\[PASS\]|\[WARN\]|\[FAIL\]/ {
-            status = ($1 == "[PASS]") ? "✅" : ($1 == "[WARN]") ? "⚠️" : "❌";
-            print status " | " $2 " | " $3 " | " $5
-          }' bundlemon_raw_output.txt >> bundlemon_comment.txt
-          
+
+          # Extract relevant lines below "Groups:"
+          awk '/Groups:/ { found=1; next } 
+               found && /\[PASS\]|\[WARN\]|\[FAIL\]/ {
+                 status = ($1 == "[PASS]") ? "✅" : ($1 == "[WARN]") ? "⚠️" : "❌";
+                 print status " | " $2 " | " $3 " | " $5
+               }' bundlemon_raw_output.txt >> bundlemon_comment.txt
+
+          # Extract and report summary messages below "Groups:"
+          echo "" >> bundlemon_comment.txt
+          awk '/Groups:/ { found=1; next } found && !/\[PASS\]|\[WARN\]|\[FAIL\]/ { print $0 }' bundlemon_raw_output.txt >> bundlemon_comment.txt
+
           # Add collapsible raw output
           echo "" >> bundlemon_comment.txt
           echo "<details>" >> bundlemon_comment.txt
