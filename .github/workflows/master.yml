@@ -38,12 +38,6 @@ jobs:
   codeql-scan:
     if: contains(inputs.workflows_to_run, 'codeql-scan') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/codeql.yml
-    permissions:
-      security-events: write
-      packages: read
-      contents: read
-      actions: read
-    secrets: inherit
     with:
       languages: ${{ inputs.languages }}
       build_mode: ${{ inputs.build_mode }}

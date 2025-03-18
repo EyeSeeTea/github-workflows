@@ -52,8 +52,6 @@ jobs:
       security-events: write
       # required to fetch internal or private CodeQL packs
       packages: read
-      contents: read  # Ensures repo contents are accessible
-      actions: read
 
     strategy:
       fail-fast: false
@@ -68,7 +66,6 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           languages: ${{ matrix.language }}
           build-mode: ${{ inputs.build_mode }}
           # If you wish to specify custom queries, you can do so here or in a config file.
