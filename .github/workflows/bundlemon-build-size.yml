@@ -82,8 +82,8 @@ jobs:
           BUNDLEMON_REMOTE=false npx bundlemon > bundlemon_raw_output.txt || true
           cat bundlemon_raw_output.txt
           
-
       - name: Format BundleMon Output
+        id: format_output
         run: |
           export PATH=$PATH:/usr/bin:/bin
           echo "## 📦 BundleMon Report" > bundlemon_comment.txt
@@ -145,9 +145,11 @@ jobs:
           echo '```' >> bundlemon_comment.txt
           echo "</details>" >> bundlemon_comment.txt
           fi
-          echo "::set-output name=comment::$(cat bundlemon_comment.txt)"
-        
-        
+          
+          # Store the comment as an output using environment files
+          echo "comment<<EOF" >> "$GITHUB_ENV"
+          cat bundlemon_comment.txt >> "$GITHUB_ENV"
+          echo "EOF" >> "$GITHUB_ENV"
 
         # Post comment on PR if workflow is triggered by a PR
       - name: Add PR Comment
@@ -155,4 +157,4 @@ jobs:
         uses: mshick/add-pr-comment@v2
         with:
           repo-token: ${{ github.token }}
-          message: ${{ steps.format_output.outputs.comment }}
+          message: ${{ env.comment }}
