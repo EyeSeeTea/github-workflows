@@ -18,21 +18,35 @@ on:
         required: false
         default: "master"
         type: string
+      runner:
+        description: "Specify runner. Defaults to checking visibility"
+        required: false
+        type: string
+      workflows_to_run:
+        description: 'Comma-separated list of workflows to run (e.g., flow1,flow2)'
+        required: false
+        default: 'all' #'run-tests,codeql-scan,build-check'
+        type: string
 
 jobs:
   run-tests:
+    if: contains(inputs.workflows_to_run, 'run-tests') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/app-test.yml
+    with:
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
 
-  codeql-security-scan:
-    needs: run-tests
+  #skip if private repo
+  codeql-scan:
+    if: contains(inputs.workflows_to_run, 'codeql-scan') || contains(inputs.workflows_to_run, 'all') && github.event.repository.private == false
     uses: ./.github/workflows/codeql.yml
     with:
       languages: ${{ inputs.languages }}
       build_mode: ${{ inputs.build_mode }}
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
 
-  bundlemon-size-check:
-    needs: run-tests
+  build-check:
+    if: contains(inputs.workflows_to_run, 'build-check') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/bundlemon-build-size.yml
     with:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
-
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
