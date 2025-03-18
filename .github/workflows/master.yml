@@ -50,4 +50,3 @@ jobs:
     with:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
       runner: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
-
