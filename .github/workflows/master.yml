@@ -35,8 +35,9 @@ jobs:
     with:
       runner: ${{ inputs.runner || (github.event.repository.private && 'self-hosted') || 'ubuntu-latest' }}
 
+  #skip if private repo
   codeql-scan:
-    if: contains(inputs.workflows_to_run, 'codeql-scan') || contains(inputs.workflows_to_run, 'all')
+    if: contains(inputs.workflows_to_run, 'codeql-scan') || contains(inputs.workflows_to_run, 'all') && github.event.repository.private == false
     uses: ./.github/workflows/codeql.yml
     with:
       languages: ${{ inputs.languages }}
