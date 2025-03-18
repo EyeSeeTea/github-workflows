@@ -27,7 +27,7 @@ jobs:
       - name: Install apt libraries
         run: |
           sudo apt update
-          sudo apt install gettext gh -y
+          sudo apt install gettext -y
 
       # Check if .bundlemonrc exists in the caller repo
       - name: Check for .bundlemonrc in caller repo
@@ -147,11 +147,21 @@ jobs:
           echo '```' >> bundlemon_comment.txt
           echo "</details>" >> bundlemon_comment.txt
           fi
+          echo "::set-output name=comment::$(cat bundlemon_comment.txt)"
+        
+        
 
         # Post comment on PR if workflow is triggered by a PR
       - name: Post PR Comment
         if: github.event_name == 'pull_request'
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} --body "$(cat bundlemon_comment.txt)"
-        env:
-          GH_TOKEN: ${{ github.token }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const comment = '${{ steps.format_output.outputs.comment }}'
+            await github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            })
