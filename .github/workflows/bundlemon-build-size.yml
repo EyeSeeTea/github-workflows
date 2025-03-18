@@ -13,6 +13,9 @@ on:
         required: false
         default: "ubuntu-latest"
         type: string
+    secrets:
+      token:
+        required: true
 
 jobs:
   build-size-check:
@@ -76,7 +79,24 @@ jobs:
           fi
           
 
-      - name: Run BundleMon
-        id: bundlemon
+      - name: Format BundleMon Output
         run: |
-          npx bundlemon
+          echo "### 📦 **BundleMon Report**" > bundlemon_comment.txt
+          if grep -q "\[PASS\]" bundlemon_raw_output.txt; then
+          echo "✅ **No significant changes in bundle size!** 🎉" >> bundlemon_comment.txt
+          elif grep -q "\[WARN\]" bundlemon_raw_output.txt; then
+          echo "⚠️ **Some files have increased in size but are within limits.**" >> bundlemon_comment.txt
+          elif grep -q "\[FAIL\]" bundlemon_raw_output.txt; then
+          echo "❌ **Some files exceeded the allowed size limit! Please review.**" >> bundlemon_comment.txt
+          fi
+          echo "\`\`\`" >> bundlemon_comment.txt
+          grep -E "Groups:|Files:|\[PASS\]|\[WARN\]|\[FAIL\]" bundlemon_raw_output.txt >> bundlemon_comment.txt
+          echo "\`\`\`" >> bundlemon_comment.txt
+
+        # Post comment on PR if workflow is triggered by a PR
+      - name: Post PR Comment
+        if: github.event_name == 'pull_request'
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --body "$(cat bundlemon_comment.txt)"
+        env:
+          GH_TOKEN: ${{ secrets.token }}
