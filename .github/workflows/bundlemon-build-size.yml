@@ -157,4 +157,4 @@ jobs:
         uses: mshick/add-pr-comment@v2
         with:
           repo-token: ${{ github.token }}
-          comment: ${{ steps.format_output.outputs.comment }}
+          message: ${{ steps.format_output.outputs.comment }}
