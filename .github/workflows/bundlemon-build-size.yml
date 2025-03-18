@@ -74,21 +74,39 @@ jobs:
           else
             echo "✅ BundleMon is already installed"
           fi
+
+
+      - name: Run BundleMon
+        id: bundlemon
+        run: |
+          npx bundlemon > bundlemon_raw_output.txt
           
 
       - name: Format BundleMon Output
         run: |
-          echo "### 📦 **BundleMon Report**" > bundlemon_comment.txt
-          if grep -q "\[PASS\]" bundlemon_raw_output.txt; then
-          echo "✅ **No significant changes in bundle size!** 🎉" >> bundlemon_comment.txt
-          elif grep -q "\[WARN\]" bundlemon_raw_output.txt; then
-          echo "⚠️ **Some files have increased in size but are within limits.**" >> bundlemon_comment.txt
-          elif grep -q "\[FAIL\]" bundlemon_raw_output.txt; then
-          echo "❌ **Some files exceeded the allowed size limit! Please review.**" >> bundlemon_comment.txt
-          fi
-          echo "\`\`\`" >> bundlemon_comment.txt
-          grep -E "Groups:|Files:|\[PASS\]|\[WARN\]|\[FAIL\]" bundlemon_raw_output.txt >> bundlemon_comment.txt
-          echo "\`\`\`" >> bundlemon_comment.txt
+          export PATH=$PATH:/usr/bin:/bin
+          echo "## 📦 BundleMon Report" > bundlemon_comment.txt
+          
+          # Start table
+          echo "" >> bundlemon_comment.txt
+          echo "| Status | Path | Size | Limit |" >> bundlemon_comment.txt
+          echo "|:------:|------|:----:|:-----:|" >> bundlemon_comment.txt
+          
+          # Extract relevant lines, only those below "Groups:"
+          awk '/Groups:/ { found=1; next } found && /\[PASS\]|\[WARN\]|\[FAIL\]/ {
+            status = ($1 == "[PASS]") ? "✅" : ($1 == "[WARN]") ? "⚠️" : "❌";
+            print status " | " $2 " | " $3 " | " $5
+          }' bundlemon_raw_output.txt >> bundlemon_comment.txt
+          
+          # Add collapsible raw output
+          echo "" >> bundlemon_comment.txt
+          echo "<details>" >> bundlemon_comment.txt
+          echo "<summary>Raw Output</summary>" >> bundlemon_comment.txt
+          echo "" >> bundlemon_comment.txt
+          echo '```' >> bundlemon_comment.txt
+          cat bundlemon_raw_output.txt >> bundlemon_comment.txt
+          echo '```' >> bundlemon_comment.txt
+          echo "</details>" >> bundlemon_comment.txt
 
         # Post comment on PR if workflow is triggered by a PR
       - name: Post PR Comment
