@@ -79,7 +79,8 @@ jobs:
       - name: Run BundleMon
         id: bundlemon
         run: |
-          USE_CALLER_CONFIG=false BUNDLEMON_REMOTE=false npx bundlemon > bundlemon_raw_output.txt
+          BUNDLEMON_REMOTE=false npx bundlemon > bundlemon_raw_output.txt
+          cat bundlemon_raw_output.txt
           
 
       - name: Format BundleMon Output
