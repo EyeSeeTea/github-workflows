@@ -79,7 +79,7 @@ jobs:
       - name: Run BundleMon
         id: bundlemon
         run: |
-          npx bundlemon > bundlemon_raw_output.txt
+          USE_CALLER_CONFIG=false BUNDLEMON_REMOTE=false npx bundlemon > bundlemon_raw_output.txt
           
 
       - name: Format BundleMon Output
