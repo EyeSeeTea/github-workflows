@@ -152,16 +152,9 @@ jobs:
         
 
         # Post comment on PR if workflow is triggered by a PR
-      - name: Post PR Comment
+      - name: Add PR Comment
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
+        uses: mshick/add-pr-comment@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const comment = '${{ steps.format_output.outputs.comment }}'
-            await github.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            })
+          repo-token: ${{ github.token }}
+          comment: ${{ steps.format_output.outputs.comment }}
