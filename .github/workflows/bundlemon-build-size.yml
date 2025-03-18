@@ -87,31 +87,63 @@ jobs:
           export PATH=$PATH:/usr/bin:/bin
           echo "## 📦 BundleMon Report" > bundlemon_comment.txt
           
-          # Start table
+          # Parse JSON report manually and convert bytes to MB
+          if [ -f bundlemon-results.json ]; then
+          # Extract relevant values from JSON
+          group_status=$(grep -o '"status": *"[^"]*"' bundlemon-results.json | head -1 | sed -E 's/"status": *"([^"]*)"/\1/')
+          path=$(grep -o '"path": *"[^"]*"' bundlemon-results.json | head -1 | sed -E 's/"path": *"([^"]*)"/\1/')
+          size_bytes=$(grep -o '"size": *[0-9]*' bundlemon-results.json | head -1 | sed -E 's/"size": *([0-9]*)/\1/')
+          limit_bytes=$(grep -o '"maxSize": *[0-9]*' bundlemon-results.json | head -1 | sed -E 's/"maxSize": *([0-9]*)/\1/')
+          percent_increase=$(grep -o '"maxPercentIncrease": *[0-9]*' bundlemon-results.json | head -1 | sed -E 's/"maxPercentIncrease": *([0-9]*)/\1/')
+          
+          # Convert bytes to MB (rounded to two decimal places)
+            size_mb=$(awk "BEGIN {printf \"%.2f\", $size_bytes / 1048576}")
+            limit_mb=$(awk "BEGIN {printf \"%.2f\", $limit_bytes / 1048576}")
+          
+          # Set status icon
+          if [ "$group_status" == "Pass" ]; then
+          status_icon="✅"
+          summary_message="**No change in files bundle size**"
+          elif [ "$group_status" == "Warn" ]; then
+          status_icon="⚠️"
+          summary_message="**Bundle size is approaching the limit**"
+          else
+          status_icon="❌"
+          summary_message="**Max size exceeded in group \`$path\`: ${size_mb}MB > ${limit_mb}MB**"
+          fi
+        
+          # Print summary message at the top
           echo "" >> bundlemon_comment.txt
-          echo "| Status | Path | Size | Limit |" >> bundlemon_comment.txt
-          echo "|:------:|------|:----:|:-----:|" >> bundlemon_comment.txt
-
-          # Extract relevant lines below "Groups:"
-          awk '/Groups:/ { found=1; next } 
-               found && /\[PASS\]|\[WARN\]|\[FAIL\]/ {
-                 status = ($1 == "[PASS]") ? "✅" : ($1 == "[WARN]") ? "⚠️" : "❌";
-                 print status " | " $2 " | " $3 " | " $5
-               }' bundlemon_raw_output.txt >> bundlemon_comment.txt
-
-          # Extract and report summary messages below "Groups:"
+          echo "$summary_message" >> bundlemon_comment.txt
           echo "" >> bundlemon_comment.txt
-          awk '/Groups:/ { found=1; next } found && !/\[PASS\]|\[WARN\]|\[FAIL\]/ { print $0 }' bundlemon_raw_output.txt >> bundlemon_comment.txt
-
-          # Add collapsible raw output
+        
+          # Print table headers
+          echo "| Status | Path | Size | Limit / Increase |" >> bundlemon_comment.txt
+          echo "|:------:|------|:----:|:----------------:|" >> bundlemon_comment.txt
+          echo "$status_icon | $path | ${size_mb}MB | ${limit_mb}MB / +${percent_increase}%" >> bundlemon_comment.txt
+          fi
+          
+          # Add collapsible section for raw CLI output
           echo "" >> bundlemon_comment.txt
           echo "<details>" >> bundlemon_comment.txt
-          echo "<summary>Raw Output</summary>" >> bundlemon_comment.txt
+          echo "<summary>🔍 Raw CLI Output</summary>" >> bundlemon_comment.txt
           echo "" >> bundlemon_comment.txt
           echo '```' >> bundlemon_comment.txt
           cat bundlemon_raw_output.txt >> bundlemon_comment.txt
           echo '```' >> bundlemon_comment.txt
           echo "</details>" >> bundlemon_comment.txt
+          
+          # Add collapsible section for raw JSON output
+          if [ -f bundlemon-results.json ]; then
+          echo "" >> bundlemon_comment.txt
+          echo "<details>" >> bundlemon_comment.txt
+          echo "<summary>📝 Raw JSON Output</summary>" >> bundlemon_comment.txt
+          echo "" >> bundlemon_comment.txt
+          echo '```json' >> bundlemon_comment.txt
+          cat bundlemon-results.json >> bundlemon_comment.txt
+          echo '```' >> bundlemon_comment.txt
+          echo "</details>" >> bundlemon_comment.txt
+          fi
 
         # Post comment on PR if workflow is triggered by a PR
       - name: Post PR Comment

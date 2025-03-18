@@ -9,4 +9,5 @@
             "maxPercentIncrease": "20"
         }
     ],
+    "reportOutput": ["json"]
 }
