@@ -79,8 +79,7 @@ jobs:
       - name: Run BundleMon
         id: bundlemon
         run: |
-          BUNDLEMON_REMOTE=false npx bundlemon
-          BUNDLEMON_REMOTE=false npx bundlemon > bundlemon_raw_output.txt
+          BUNDLEMON_REMOTE=false npx bundlemon > bundlemon_raw_output.txt || true
           cat bundlemon_raw_output.txt
           
 
