@@ -1,11 +1,17 @@
 name: "Application testing"
 on:
   workflow_call:
+    inputs:
+      runner:
+        description: "Specify runner. Defaults to checking visibility"
+        required: false
+        default: "ubuntu-latest"
+        type: string
 
 jobs:
   unit-tests:
     name: Unit tests
-    runs-on: self-hosted
+    runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
