@@ -5,7 +5,6 @@
             "path": "./**/*",
             "friendlyName": "Build Folder",
             "compression": "gzip",
-            "maxSize": "2.5 MB",
             "maxPercentIncrease": "20"
         }
     ],
