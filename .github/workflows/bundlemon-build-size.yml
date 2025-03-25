@@ -70,7 +70,7 @@ jobs:
         run: |
           if ! npx --no-install bundlemon --version; then
             echo "⚠️ BundleMon not found, installing..."
-            yarn add bundlemon --no-lockfile --silent
+            yarn add bundlemon@2.1.0 --no-lockfile --silent
           else
             echo "✅ BundleMon is already installed"
           fi
