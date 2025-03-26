@@ -8,5 +8,14 @@
             "maxPercentIncrease": "20"
         }
     ],
-    "reportOutput": ["json"]
+    "reportOutput": [
+            [
+                "github",
+                {
+                    "checkRun": true,
+                    "commitStatus": true,
+                    "prComment": true
+                }
+            ]
+        ]
 }
