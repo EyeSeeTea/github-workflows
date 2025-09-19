@@ -23,9 +23,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
-
-      - name: Install yarn
-        run: npm install -g yarn
+          cache: "yarn"
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
