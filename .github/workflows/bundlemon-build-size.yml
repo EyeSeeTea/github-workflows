@@ -59,6 +59,14 @@ jobs:
           node-version-file: '.nvmrc'  # Use the Node.js version specified in .nvmrc
           cache: 'yarn'
 
+      - name: Cache npm for npx-scoped tools
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-npx
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       # Install and build
       - name: Install and build
         run: |
