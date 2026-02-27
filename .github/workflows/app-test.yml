@@ -29,7 +29,10 @@ jobs:
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: 'echo "YARN_CACHE_DIR=$(yarn cache dir 2>&1 | grep -E ^/ | head -n1)" >> $GITHUB_ENV'
+        run: |
+          CACHE_DIR=$(yarn cache dir 2>&1 | sed 's/^[[:space:]]*//' | grep -E '^/' | head -n1)
+          if [ -z "$CACHE_DIR" ]; then CACHE_DIR="$RUNNER_TEMP/yarn-cache"; fi
+          echo "YARN_CACHE_DIR=$CACHE_DIR" >> $GITHUB_ENV
 
       - name: Cache yarn dependencies
         uses: actions/cache@v3
@@ -51,4 +54,3 @@ jobs:
 
       - name: Run typescript tests
         run: npx tsc
-        
