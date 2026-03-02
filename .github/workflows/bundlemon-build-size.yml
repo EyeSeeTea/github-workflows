@@ -56,8 +56,26 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'  # Use the Node.js version specified in .nvmrc
-          cache: 'yarn'
+          node-version-file: '.nvmrc'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: |
+          CACHE_DIR=$(yarn cache dir 2>&1 | sed 's/^[[:space:]]*//' | grep -E '^/' | head -n1)
+          if [ -z "$CACHE_DIR" ]; then CACHE_DIR="$RUNNER_TEMP/yarn-cache"; fi
+          echo "ACTIONS_YARN_CACHE_PATH=$CACHE_DIR" >> $GITHUB_ENV
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ env.ACTIONS_YARN_CACHE_PATH }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
       - name: Cache npm for npx-scoped tools
         uses: actions/cache@v3
