@@ -2,6 +2,15 @@ name: Generate Bom Yarn 4 CycloneDX
 
 on:
   workflow_call:
+    inputs:
+      runner:
+        description: "Specify runner for the BOM workflow"
+        required: false
+        default: "bom"
+        type: string
+    secrets:
+      DTRACK_API_KEY:
+        required: true
   workflow_dispatch:
   pull_request:
     types:
@@ -15,7 +24,7 @@ concurrency:
 
 jobs:
   generatebomv4:
-    runs-on: bom
+    runs-on: ${{ inputs.runner }}
     permissions:
       contents: read
       actions: read
