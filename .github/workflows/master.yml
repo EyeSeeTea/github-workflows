@@ -57,13 +57,13 @@ jobs:
       runner: ${{ inputs.runner || (github.event.repository.private && 'basic-runner') || 'ubuntu-latest' }}
 
   generate-bom-v4:
-    if: contains(inputs.workflows_to_run, 'generate-bom-v4') || contains(inputs.workflows_to_run, 'all')
+    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'generate-bom-v4') || contains(inputs.workflows_to_run, 'all'))
     uses: ./.github/workflows/generate_bom_v4.yml
     with:
       runner: ${{ inputs.bom_runner }}
 
   generate-bom-syft:
-    if: contains(inputs.workflows_to_run, 'generate-bom-syft') || contains(inputs.workflows_to_run, 'all')
+    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'generate-bom-syft') || contains(inputs.workflows_to_run, 'all'))
     uses: ./.github/workflows/generate_bom_syft.yml
     with:
       runner: ${{ inputs.bom_runner }}
