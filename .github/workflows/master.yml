@@ -22,6 +22,11 @@ on:
         description: "Specify runner. Defaults to checking visibility"
         required: false
         type: string
+      bom_runner:
+        description: "Specify runner for BOM workflows"
+        required: false
+        default: "bom"
+        type: string
       workflows_to_run:
         description: 'Comma-separated list of workflows to run (e.g., flow1,flow2)'
         required: false
@@ -50,3 +55,15 @@ jobs:
     with:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
       runner: ${{ inputs.runner || (github.event.repository.private && 'basic-runner') || 'ubuntu-latest' }}
+
+  generate-bom-v4:
+    if: contains(inputs.workflows_to_run, 'generate-bom-v4') || contains(inputs.workflows_to_run, 'all')
+    uses: ./.github/workflows/generate_bom_v4.yml
+    with:
+      runner: ${{ inputs.bom_runner }}
+
+  generate-bom-syft:
+    if: contains(inputs.workflows_to_run, 'generate-bom-syft') || contains(inputs.workflows_to_run, 'all')
+    uses: ./.github/workflows/generate_bom_syft.yml
+    with:
+      runner: ${{ inputs.bom_runner }}
