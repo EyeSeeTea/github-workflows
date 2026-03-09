@@ -49,9 +49,16 @@ jobs:
           echo "code_scanning_sha=$sha" >> "$GITHUB_OUTPUT"
           echo "Resolved code scanning target: ref=$ref sha=$sha"
 
-      - uses: actions/checkout@v4
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
         with:
           ref: ${{ steps.code_scanning_target.outputs.code_scanning_sha }}
+
+      - name: Checkout shared workflows repository
+        uses: actions/checkout@v4
+        with:
+          repository: EyeSeeTea/github-workflows
+          path: shared-workflows
 
       - name: Read node version (min 20.18.0 for CycloneDX)
         run: |
@@ -92,7 +99,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          scripts/upload_bom_and_fetch_metrics.sh \
+          bash shared-workflows/scripts/upload_bom_and_fetch_metrics.sh \
             --bom-file bom_berry.json \
             --project-suffix berry
 
@@ -135,7 +142,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          python3 scripts/normalize_sarif.py \
+          python3 shared-workflows/scripts/normalize_sarif.py \
             --input-sarif dtrack-yarn4.sarif \
             --output-sarif dtrack-yarn4.sarif \
             --vdr bom_yarn4.json \
@@ -166,7 +173,7 @@ jobs:
           HEAD_REF_NAME: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-          scripts/report_open_code_scanning_alert_instances.sh \
+          bash shared-workflows/scripts/report_open_code_scanning_alert_instances.sh \
             --repo "$GITHUB_REPOSITORY" \
             --tool-name "$TOOL_NAME" \
             --head-ref "refs/heads/${HEAD_REF_NAME:-${GITHUB_REF_NAME}}" \
