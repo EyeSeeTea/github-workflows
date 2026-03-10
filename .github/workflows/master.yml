@@ -25,13 +25,16 @@ on:
       bom_runner:
         description: "Specify runner for BOM workflows"
         required: false
-        default: "bom"
+        default: "dependency-track-scan"
         type: string
       workflows_to_run:
         description: 'Comma-separated list of workflows to run (e.g., flow1,flow2)'
         required: false
         default: 'all' #'run-tests,codeql-scan,build-check'
         type: string
+    secrets:
+      DTRACK_API_KEY:
+        required: false
 
 jobs:
   run-tests:
@@ -56,14 +59,18 @@ jobs:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
       runner: ${{ inputs.runner || (github.event.repository.private && 'basic-runner') || 'ubuntu-latest' }}
 
-  generate-bom-v4:
-    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'generate-bom-v4') || contains(inputs.workflows_to_run, 'all'))
-    uses: ./.github/workflows/generate_bom_v4.yml
+  dependency-track-yarn4:
+    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'dependency-track-yarn4') || contains(inputs.workflows_to_run, 'all'))
+    uses: ./.github/workflows/dependency-track-yarn4.yml
+    secrets:
+      DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
     with:
       runner: ${{ inputs.bom_runner }}
 
-  generate-bom-syft:
-    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'generate-bom-syft') || contains(inputs.workflows_to_run, 'all'))
-    uses: ./.github/workflows/generate_bom_syft.yml
+  dependency-track-syft:
+    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all'))
+    uses: ./.github/workflows/dependency-track-syft.yml
+    secrets:
+      DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
     with:
       runner: ${{ inputs.bom_runner }}

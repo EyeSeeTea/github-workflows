@@ -1,4 +1,4 @@
-name: Syft SBOM Runner
+name: Dependency-Track Syft Scan
 
 on:
   workflow_call:
@@ -6,7 +6,7 @@ on:
       runner:
         description: "Specify runner for the BOM workflow"
         required: false
-        default: "bom"
+        default: "dependency-track-scan"
         type: string
     secrets:
       DTRACK_API_KEY:
@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  generatebom:
+  dependency-track-syft:
     runs-on: ${{ inputs.runner }}
     permissions:
       contents: read
@@ -226,8 +226,8 @@ jobs:
           ui_new_unknown="${ui_new_unknown:-0}"
           ui_baseline_missing="${ui_baseline_missing:-false}"
 
-          echo "::notice::Syft (GitHub alert instances) new vs base: critical=$ui_new_critical high=$ui_new_high total=$ui_new_total baseline_missing=$ui_baseline_missing"
-          echo "### Syft code scanning" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice::Dependency-Track Syft (GitHub alert instances) new vs base: critical=$ui_new_critical high=$ui_new_high total=$ui_new_total baseline_missing=$ui_baseline_missing"
+          echo "### Dependency-Track Syft code scanning" >> "$GITHUB_STEP_SUMMARY"
           echo "- SARIF findings uploaded: $sarif_uploaded_total" >> "$GITHUB_STEP_SUMMARY"
           echo "- Open alert instances in branch (GitHub UI):" >> "$GITHUB_STEP_SUMMARY"
           echo "  - critical: $ui_open_critical" >> "$GITHUB_STEP_SUMMARY"
