@@ -41,7 +41,7 @@ jobs:
     if: contains(inputs.workflows_to_run, 'run-tests') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/app-test.yml
     with:
-      runner: ${{ inputs.runner || (github.event.repository.private && 'basic-runner') || 'ubuntu-latest' }}
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-runner') || 'ubuntu-latest' }}
 
   #skip if private repo
   codeql-scan:
@@ -50,17 +50,17 @@ jobs:
     with:
       languages: ${{ inputs.languages }}
       build_mode: ${{ inputs.build_mode }}
-      runner: ${{ inputs.runner || (github.event.repository.private && 'basic-runner') || 'ubuntu-latest' }}
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-runner') || 'ubuntu-latest' }}
 
   build-check:
     if: contains(inputs.workflows_to_run, 'build-check') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/bundlemon-build-size.yml
     with:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
-      runner: ${{ inputs.runner || (github.event.repository.private && 'basic-runner') || 'ubuntu-latest' }}
+      runner: ${{ inputs.runner || (github.event.repository.private && 'self-runner') || 'ubuntu-latest' }}
 
   dependency-track-yarn4:
-    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'dependency-track-runner') || contains(inputs.workflows_to_run, 'all'))
+    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'dependency-track-yarn4') || contains(inputs.workflows_to_run, 'all'))
     uses: ./.github/workflows/dependency-track-yarn4.yml
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
@@ -68,7 +68,7 @@ jobs:
       runner: ${{ inputs.bom_runner }}
 
   dependency-track-syft:
-    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'dependency-track-runner') || contains(inputs.workflows_to_run, 'all'))
+    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all'))
     uses: ./.github/workflows/dependency-track-syft.yml
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
