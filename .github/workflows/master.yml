@@ -25,7 +25,7 @@ on:
       bom_runner:
         description: "Specify runner for BOM workflows"
         required: false
-        default: "dependency-track-scan"
+        default: "dependency-track-runner"
         type: string
       workflows_to_run:
         description: 'Comma-separated list of workflows to run (e.g., flow1,flow2)'
