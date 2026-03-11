@@ -6,7 +6,7 @@ on:
       runner:
         description: "Specify runner for the BOM workflow"
         required: false
-        default: "dependency-track-scan"
+        default: "dependency-track-runner"
         type: string
     secrets:
       DTRACK_API_KEY:
