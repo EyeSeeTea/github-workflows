@@ -19,7 +19,7 @@ on:
       - synchronize
 
 concurrency:
-  group: dtrack-${{ github.workflow }}-${{ github.ref }}
+  group: dtrack-${{ github.workflow }}-yarn4-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
