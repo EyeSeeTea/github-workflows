@@ -64,12 +64,17 @@ jobs:
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: |
-          CACHE_DIR=$(yarn cache dir 2>&1 | sed 's/^[[:space:]]*//' | grep -E '^/' | head -n1)
+          YARN_MAJOR=$(yarn --version | cut -d. -f1)
+          if [ "$YARN_MAJOR" = "1" ]; then
+            CACHE_DIR=$(yarn cache dir)
+          else
+            CACHE_DIR=$(yarn config get cacheFolder)
+          fi
           if [ -z "$CACHE_DIR" ]; then CACHE_DIR="$RUNNER_TEMP/yarn-cache"; fi
           echo "ACTIONS_YARN_CACHE_PATH=$CACHE_DIR" >> $GITHUB_ENV
 
       - name: Cache yarn dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         id: yarn-cache
         with:
           path: ${{ env.ACTIONS_YARN_CACHE_PATH }}
@@ -78,7 +83,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Cache npm for npx-scoped tools
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-npx
