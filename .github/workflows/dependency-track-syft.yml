@@ -12,11 +12,6 @@ on:
       DTRACK_API_KEY:
         required: true
   workflow_dispatch:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
 
 concurrency:
   group: dtrack-${{ github.workflow }}-syft-${{ github.ref }}
@@ -81,7 +76,7 @@ jobs:
 
               # Install syft in the container
               curl -sSfL https://raw.githubusercontent.com/anchore/syft/v1.42.2/install.sh \
-                | sh -s -- -b /usr/local/bin
+                | sh -s -- -b /usr/local/bin v1.42.2
 
               # Generate CycloneDX JSON SBOM
               syft . -o cyclonedx-json=bom_syft.json
