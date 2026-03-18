@@ -182,75 +182,15 @@ jobs:
             --output-prefix "yarn4_open_alerts"
 
       - name: Report code scanning summary (yarn4)
+        env:
+          OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_yarn4.outputs) }}
         run: |
           set -euo pipefail
-
-          sarif_uploaded_total="$(
-            jq -r '
-              [
-                .runs[]?.results[]?
-                | [
-                    (.ruleId // ""),
-                    (.properties.name // "unknown-package"),
-                    (.properties.version // "")
-                  ]
-                | join("|")
-              ]
-              | unique
-              | length
-            ' dtrack-yarn4.sarif
-          )"
-          ui_open_total="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_head_instances_count }}"
-          ui_open_critical="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_head_critical_count }}"
-          ui_open_high="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_head_high_count }}"
-          ui_open_medium="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_head_medium_count }}"
-          ui_open_low="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_head_low_count }}"
-          ui_open_unknown="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_head_unknown_count }}"
-          ui_new_total="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_count }}"
-          ui_new_critical="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_critical_count }}"
-          ui_new_high="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_high_count }}"
-          ui_new_medium="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_medium_count }}"
-          ui_new_low="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_low_count }}"
-          ui_new_unknown="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_unknown_count }}"
-          ui_baseline_missing="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_baseline_missing }}"
-          branch_name="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          query="is:open branch:${branch_name} tool:\"OWASP Dependency-Track (yarn4)\""
-          branch_url="https://github.com/${GITHUB_REPOSITORY}/security/code-scanning?query=$(jq -rn --arg value "$query" '$value|@uri')"
-
-          sarif_uploaded_total="${sarif_uploaded_total:-0}"
-          ui_open_total="${ui_open_total:-0}"
-          ui_open_critical="${ui_open_critical:-0}"
-          ui_open_high="${ui_open_high:-0}"
-          ui_open_medium="${ui_open_medium:-0}"
-          ui_open_low="${ui_open_low:-0}"
-          ui_open_unknown="${ui_open_unknown:-0}"
-          ui_new_total="${ui_new_total:-0}"
-          ui_new_critical="${ui_new_critical:-0}"
-          ui_new_high="${ui_new_high:-0}"
-          ui_new_medium="${ui_new_medium:-0}"
-          ui_new_low="${ui_new_low:-0}"
-          ui_new_unknown="${ui_new_unknown:-0}"
-          ui_baseline_missing="${ui_baseline_missing:-false}"
-
-          echo "::notice::Dependency-Track Yarn4 (GitHub alert instances) new vs base: critical=$ui_new_critical high=$ui_new_high total=$ui_new_total baseline_missing=$ui_baseline_missing"
-          echo "### Dependency-Track Yarn4 code scanning" >> "$GITHUB_STEP_SUMMARY"
-          echo "- SARIF findings uploaded: $sarif_uploaded_total" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Open alert instances in branch (GitHub UI):" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - critical: $ui_open_critical" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - high: $ui_open_high" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - medium: $ui_open_medium" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - low: $ui_open_low" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - unknown: $ui_open_unknown" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - total: $ui_open_total" >> "$GITHUB_STEP_SUMMARY"
-          echo "- New alert instances vs base (head - base):" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - critical: $ui_new_critical" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - high: $ui_new_high" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - medium: $ui_new_medium" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - low: $ui_new_low" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - unknown: $ui_new_unknown" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - total: $ui_new_total" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Baseline missing for instance comparison (base has no open instances): $ui_baseline_missing" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Branch alerts URL: $branch_url" >> "$GITHUB_STEP_SUMMARY"
+          bash shared-workflows/scripts/report_code_scanning_summary.sh \
+            --sarif-file dtrack-yarn4.sarif \
+            --tool-name "OWASP Dependency-Track (yarn4)" \
+            --summary-title "Dependency-Track Yarn4 code scanning" \
+            --output-prefix yarn4_open_alerts
 
       - name: Enforce newly introduced vulnerability gate (critical/high)
         run: |
