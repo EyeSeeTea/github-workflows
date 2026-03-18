@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# TODO: Add tests using sample files.
+
 # Input parameters and defaults.
 sarif_file=""
 tool_name=""
