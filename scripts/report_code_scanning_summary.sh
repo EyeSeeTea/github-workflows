@@ -140,22 +140,28 @@ sarif_uploaded_total="$({
 query="is:open branch:${branch_name} tool:\"${tool_name}\""
 branch_url="https://github.com/${repo}/security/code-scanning?query=$(jq -rn --arg value "$query" '$value|@uri')"
 
-# Publish the full summary as GitHub notices so it is always visible in logs.
-echo "::notice::${summary_title}"
-echo "::notice::SARIF findings uploaded: $sarif_uploaded_total"
-echo "::notice::Open alert instances in branch (GitHub UI)"
-echo "::notice::critical: $ui_open_critical"
-echo "::notice::high: $ui_open_high"
-echo "::notice::medium: $ui_open_medium"
-echo "::notice::low: $ui_open_low"
-echo "::notice::unknown: $ui_open_unknown"
-echo "::notice::total: $ui_open_total"
-echo "::notice::New alert instances vs base (head - base)"
-echo "::notice::critical: $ui_new_critical"
-echo "::notice::high: $ui_new_high"
-echo "::notice::medium: $ui_new_medium"
-echo "::notice::low: $ui_new_low"
-echo "::notice::unknown: $ui_new_unknown"
-echo "::notice::total: $ui_new_total"
-echo "::notice::Baseline missing for instance comparison (base has no open instances): $ui_baseline_missing"
-echo "::notice::Branch alerts URL: $branch_url"
+# Build one reusable report block.
+summary_report="$(cat <<EOF
+${summary_title}
+SARIF findings uploaded: $sarif_uploaded_total
+Open alert instances in branch (GitHub UI): critical=$ui_open_critical high=$ui_open_high medium=$ui_open_medium low=$ui_open_low unknown=$ui_open_unknown total=$ui_open_total
+New alert instances vs base (head - base): critical=$ui_new_critical high=$ui_new_high medium=$ui_new_medium low=$ui_new_low unknown=$ui_new_unknown total=$ui_new_total
+Baseline missing for instance comparison (base has no open instances): $ui_baseline_missing
+Branch alerts URL: $branch_url
+EOF
+)"
+
+# Emit a single multiline notice (GitHub commands require escaped newlines).
+notice_payload="$summary_report"
+notice_payload="${notice_payload//'%'/'%25'}"
+notice_payload="${notice_payload//$'\n'/'%0A'}"
+notice_payload="${notice_payload//$'\r'/'%0D'}"
+echo "::notice::${notice_payload}"
+
+# Keep the full human-readable breakdown in the job summary.
+if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+  cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+### ${summary_title}
+$summary_report
+EOF
+fi
