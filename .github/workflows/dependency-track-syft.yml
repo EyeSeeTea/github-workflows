@@ -207,3 +207,23 @@ jobs:
           fi
 
           echo "No new critical/high alert instances detected vs base"
+
+      - name: Runner cleanup (always)
+        if: ${{ always() }}
+        run: |
+          set +e
+
+          # Remove generated files from workspace to keep self-hosted runners clean.
+          rm -f \
+            bom_syft.json \
+            vdr_syft.json \
+            vex_syft.json \
+            dtrack-syft.sarif \
+            syft_open_alerts_report.md \
+            syft_open_alerts_counts.tsv \
+            syft_open_alerts_details.tsv
+
+          # Best-effort podman cleanup for containers/images created during SBOM generation.
+          podman container prune -f >/dev/null 2>&1 || true
+          podman image prune -f >/dev/null 2>&1 || true
+          podman volume prune -f >/dev/null 2>&1 || true
