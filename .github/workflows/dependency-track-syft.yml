@@ -68,6 +68,7 @@ jobs:
         run: |
           podman run --rm \
             -v "$GITHUB_WORKSPACE:/work" -w /work \
+            -v /work/node_modules \
             node:${NODE_VERSION}-bullseye \
             bash -lc '
               set -e
@@ -227,3 +228,6 @@ jobs:
           podman container prune -f >/dev/null 2>&1 || true
           podman image prune -f >/dev/null 2>&1 || true
           podman volume prune -f >/dev/null 2>&1 || true
+
+          # Clean only this job workspace to avoid accumulating caller repositories.
+          rm -rf "$GITHUB_WORKSPACE"
