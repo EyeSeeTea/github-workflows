@@ -140,30 +140,6 @@ echo "=== Metrics ==="
 echo "$metrics" | jq '{critical, high, medium, low, unassigned, vulnerabilities, vulnerableComponents, components}'
 echo "Collected gate values: critical=[$critical] high=[$high]"
 
-analysis_token="$(
-  curl -sSf -X POST "$dtrack_url/api/v1/finding/project/$project_uuid/analyze" \
-    -H "X-Api-Key: $dtrack_api_key" \
-  | jq -r '.token // empty'
-)"
-[[ -n "$analysis_token" ]] || { echo "Dependency-Track analysis token was empty" >&2; exit 1; }
-
-echo "Waiting for Dependency-Track analysis to finish..."
-analysis_processing="true"
-for ((i=1; i<=max_wait_attempts; i++)); do
-  analysis_processing="$(
-    curl -sSf "$dtrack_url/api/v1/event/token/$analysis_token" \
-      -H "X-Api-Key: $dtrack_api_key" \
-    | jq -r '.processing'
-  )"
-  if [[ "$analysis_processing" == "false" ]]; then
-    echo "Analysis finished."
-    break
-  fi
-  sleep "$wait_seconds"
-done
-
-[[ "$analysis_processing" == "false" ]] || { echo "Timed out waiting for Dependency-Track analysis" >&2; exit 1; }
-
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   {
     echo "project_uuid=$project_uuid"
