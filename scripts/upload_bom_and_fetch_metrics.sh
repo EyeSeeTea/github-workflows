@@ -127,7 +127,7 @@ echo "Project UUID: $project_uuid"
 
 metrics="$(
   curl -sSf "$dtrack_url/api/v1/metrics/project/$project_uuid/current" \
-    -H "X-Api-Key: $dtrack_api_key"
+    -H "X-Api-Key: $dtrack_api_key" || echo '{}'
 )"
 
 critical="$(echo "$metrics" | jq -r '.critical // 0' | tr -d '\r\n ')"
