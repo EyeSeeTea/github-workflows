@@ -11,7 +11,7 @@ on:
       runner:
         description: "Specify runner. Defaults to checking visibility"
         required: false
-        default: "ubuntu-latest"
+        default: "general-runner"
         type: string
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install apt libraries
-        run: sudo apt install gettext -y
+        run: sudo apt update && sudo apt install gettext -y
 
       # Check if .bundlemonrc exists in the caller repo
       - name: Check for .bundlemonrc in caller repo
@@ -56,11 +56,34 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'  # Use the Node.js version specified in .nvmrc
-          cache: 'yarn'
+          node-version-file: '.nvmrc'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: |
+          YARN_MAJOR=$(yarn --version | cut -d. -f1)
+          if [ "$YARN_MAJOR" = "1" ]; then
+            CACHE_DIR=$(yarn cache dir)
+          else
+            CACHE_DIR=$(yarn config get cacheFolder)
+          fi
+          if [ -z "$CACHE_DIR" ]; then CACHE_DIR="$RUNNER_TEMP/yarn-cache"; fi
+          echo "ACTIONS_YARN_CACHE_PATH=$CACHE_DIR" >> $GITHUB_ENV
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v5
+        id: yarn-cache
+        with:
+          path: ${{ env.ACTIONS_YARN_CACHE_PATH }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
       - name: Cache npm for npx-scoped tools
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-npx

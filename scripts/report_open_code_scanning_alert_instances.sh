@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# TODO: Add tests using sample files.
+
 usage() {
   cat <<'EOF'
 Usage:

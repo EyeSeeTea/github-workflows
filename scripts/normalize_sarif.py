@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# TODO: Add tests using sample files.
 from __future__ import annotations
 
 import argparse

@@ -12,14 +12,9 @@ on:
       DTRACK_API_KEY:
         required: true
   workflow_dispatch:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
 
 concurrency:
-  group: dtrack-${{ github.workflow }}-yarn4-${{ github.ref }}
+  group: dtrack-${{ github.workflow }}-yarn4-yarn4-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -84,6 +79,7 @@ jobs:
           podman run --rm \
             --network=host \
             -v "$GITHUB_WORKSPACE:/work" -w /work \
+            -v /work/node_modules \
             node:${NODE_VERSION}-bullseye \
             bash -lc '
               corepack enable
@@ -190,6 +186,8 @@ jobs:
       - name: Report code scanning summary (yarn4)
         env:
           OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_yarn4.outputs) }}
+        env:
+          OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_yarn4.outputs) }}
         run: |
           set -euo pipefail
           bash shared-workflows/scripts/report_code_scanning_summary.sh \
@@ -223,3 +221,28 @@ jobs:
           fi
 
           echo "No new critical/high alert instances detected vs base"
+
+      - name: Runner cleanup (always)
+        if: ${{ always() }}
+        run: |
+          set +e
+
+          # Remove generated files from workspace to keep self-hosted runners clean.
+          rm -f \
+            bom_berry.json \
+            bom_yarn4.json \
+            vex_yarn4.json \
+            dtrack-yarn4.sarif \
+            yarn4_open_alerts_report.md \
+            yarn4_open_alerts_counts.tsv \
+            yarn4_open_alerts_details.tsv
+
+          # Best-effort podman cleanup for containers/images created during SBOM generation.
+          podman container prune -f >/dev/null 2>&1 || true
+          podman image prune -f >/dev/null 2>&1 || true
+          podman volume prune -f >/dev/null 2>&1 || true
+
+          # Clean specific directories that accumulate between runs (dependency tree, caches), but preserve workspace structure for post-job cleanup.
+          rm -rf "$GITHUB_WORKSPACE/node_modules" \
+                 "$GITHUB_WORKSPACE/shared-workflows" \
+                 "$GITHUB_WORKSPACE/.yarn"

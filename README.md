@@ -31,10 +31,13 @@ jobs:
   master-workflow:
     uses: EyeSeeTea/github-workflows/.github/workflows/master.yml@master
     with:
-      # --- to specify runner. By default:
-      # --- the runner is `ubuntu-latest` if repo is public
-      # --- the runner is `self-hosted` if repo is private
-      #runner: "ubuntu-latest"
+      # --- to specify runner for run-tests, codeql-scan and build-check.
+      # --- default is `general-runner` (self-hosted)
+      #runner: "general-runner"
+
+      # --- optional: runner for dependency-track workflows only
+      # --- default is `dependency-track-runner`
+      #bom_runner: "dependency-track-runner"
       
       # --- codeQL parameters
       # languages: '["javascript-typescript", "python"]'

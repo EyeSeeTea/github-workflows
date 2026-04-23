@@ -69,11 +69,17 @@ jobs:
           podman system migrate
           podman container prune -f
 
+      - name: Podman pre-flight cleanup
+        run: |
+          podman system migrate
+          podman container prune -f
+
       - name: Yarn install + SBOM (container)
         run: |
           podman run --rm \
             --network=host \
             -v "$GITHUB_WORKSPACE:/work" -w /work \
+            -v /work/node_modules \
             node:${NODE_VERSION}-bullseye \
             bash -lc '
               set -e
@@ -180,6 +186,8 @@ jobs:
       - name: Report code scanning summary (syft)
         env:
           OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_syft.outputs) }}
+        env:
+          OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_syft.outputs) }}
         run: |
           set -euo pipefail
           bash shared-workflows/scripts/report_code_scanning_summary.sh \
@@ -213,3 +221,27 @@ jobs:
           fi
 
           echo "No new critical/high alert instances detected vs base"
+
+      - name: Runner cleanup (always)
+        if: ${{ always() }}
+        run: |
+          set +e
+
+          # Remove generated files from workspace to keep self-hosted runners clean.
+          rm -f \
+            bom_syft.json \
+            vdr_syft.json \
+            vex_syft.json \
+            dtrack-syft.sarif \
+            syft_open_alerts_report.md \
+            syft_open_alerts_counts.tsv \
+            syft_open_alerts_details.tsv
+
+          # Best-effort podman cleanup for containers/images created during SBOM generation.
+          podman container prune -f >/dev/null 2>&1 || true
+          podman image prune -f >/dev/null 2>&1 || true
+          podman volume prune -f >/dev/null 2>&1 || true
+
+          # Clean specific directories that accumulate between runs (dependency tree, caches), but preserve workspace structure for post-job cleanup.
+          rm -rf "$GITHUB_WORKSPACE/node_modules" \
+                 "$GITHUB_WORKSPACE/shared-workflows"
