@@ -69,9 +69,15 @@ jobs:
           fi
           echo "NODE_VERSION=$ver" >> "$GITHUB_ENV"
 
+      - name: Podman pre-flight cleanup
+        run: |
+          podman system migrate
+          podman container prune -f
+
       - name: Yarn Berry + CycloneDX (container)
         run: |
           podman run --rm \
+            --network=host \
             -v "$GITHUB_WORKSPACE:/work" -w /work \
             -v /work/node_modules \
             node:${NODE_VERSION}-bullseye \
