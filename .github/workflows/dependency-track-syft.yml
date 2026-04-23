@@ -186,8 +186,6 @@ jobs:
       - name: Report code scanning summary (syft)
         env:
           OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_syft.outputs) }}
-        env:
-          OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_syft.outputs) }}
         run: |
           set -euo pipefail
           bash shared-workflows/scripts/report_code_scanning_summary.sh \

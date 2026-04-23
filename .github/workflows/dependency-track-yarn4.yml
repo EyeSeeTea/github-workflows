@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: dtrack-${{ github.workflow }}-yarn4-yarn4-${{ github.ref }}
+  group: dtrack-${{ github.workflow }}-yarn4-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -184,8 +184,6 @@ jobs:
             --output-prefix "yarn4_open_alerts"
 
       - name: Report code scanning summary (yarn4)
-        env:
-          OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_yarn4.outputs) }}
         env:
           OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_yarn4.outputs) }}
         run: |

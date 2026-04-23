@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-<<<<<<< HEAD
-=======
 # TODO: Add tests using sample files.
 
->>>>>>> feature/add_bom_actions
 # Input parameters and defaults.
 sarif_file=""
 tool_name=""
