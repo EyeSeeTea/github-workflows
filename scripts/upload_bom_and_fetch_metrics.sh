@@ -125,16 +125,19 @@ project_uuid="$(echo "$project" | jq -r '.uuid // empty')"
 [[ -n "$project_uuid" ]] || { echo "Could not resolve project UUID: $project" >&2; exit 1; }
 echo "Project UUID: $project_uuid"
 
-metrics="$(
+if metrics_raw="$(
   curl -sSf "$dtrack_url/api/v1/metrics/project/$project_uuid/current" \
-    -H "X-Api-Key: $dtrack_api_key" || echo '{}'
-)"
+    -H "X-Api-Key: $dtrack_api_key" 2>&1
+)" && echo "$metrics_raw" | jq -e 'type == "object"' >/dev/null 2>&1; then
+  metrics="$metrics_raw"
+else
+  echo "Warning: could not fetch metrics: ${metrics_raw:-<empty>}" >&2
+  echo "Defaulting metrics to 0."
+  metrics='{}'
+fi
 
-critical="$(echo "$metrics" | jq -r '.critical // 0' | tr -d '\r\n ')"
-high="$(echo "$metrics" | jq -r '.high // 0' | tr -d '\r\n ')"
-
-[[ "$critical" =~ ^[0-9]+$ ]] || { echo "Invalid critical metric: $critical" >&2; exit 1; }
-[[ "$high" =~ ^[0-9]+$ ]] || { echo "Invalid high metric: $high" >&2; exit 1; }
+critical="$(echo "$metrics" | jq -r '(.critical // 0) | tonumber? // 0')"
+high="$(echo "$metrics" | jq -r '(.high // 0) | tonumber? // 0')"
 
 echo "=== Metrics ==="
 echo "$metrics" | jq '{critical, high, medium, low, unassigned, vulnerabilities, vulnerableComponents, components}'
