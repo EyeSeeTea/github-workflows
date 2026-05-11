@@ -37,7 +37,7 @@ on:
         required: false
 
 jobs:
-  detect-pm:
+  detect-yarn4:
     if: contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all')
     runs-on: ${{ inputs.runner || 'general-runner' }}
     outputs:
@@ -83,8 +83,8 @@ jobs:
       runner: ${{ inputs.bom_runner }}
 
   dependency-track-syft:
-    needs: detect-pm
-    if: needs.detect-pm.outputs.use_yarn4 == 'false' && (contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all'))
+    needs: detect-yarn4
+    if: needs.detect-yarn4.outputs.use_yarn4 == 'false' && (contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all'))
     uses: ./.github/workflows/dependency-track-syft.yml
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
