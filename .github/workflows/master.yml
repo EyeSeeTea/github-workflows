@@ -37,6 +37,21 @@ on:
         required: false
 
 jobs:
+  detect-pm:
+    if: contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all')
+    runs-on: ${{ inputs.runner || 'general-runner' }}
+    outputs:
+      use_yarn4: ${{ steps.check.outputs.use_yarn4 }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if grep -q '"packageManager": "yarn@4' package.json 2>/dev/null; then
+            echo "use_yarn4=true" >> $GITHUB_OUTPUT
+          else
+            echo "use_yarn4=false" >> $GITHUB_OUTPUT
+          fi
+
   run-tests:
     if: contains(inputs.workflows_to_run, 'run-tests') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/app-test.yml
@@ -60,7 +75,7 @@ jobs:
       runner: ${{ inputs.runner || 'general-runner' }}
 
   dependency-track-yarn4:
-    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'dependency-track-yarn4') || contains(inputs.workflows_to_run, 'all'))
+    if: contains(inputs.workflows_to_run, 'dependency-track-yarn4') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/dependency-track-yarn4.yml
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
@@ -68,7 +83,8 @@ jobs:
       runner: ${{ inputs.bom_runner }}
 
   dependency-track-syft:
-    if: github.event_name == 'pull_request' && (contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all'))
+    needs: detect-pm
+    if: needs.detect-pm.outputs.use_yarn4 == 'false' && (contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all'))
     uses: ./.github/workflows/dependency-track-syft.yml
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
