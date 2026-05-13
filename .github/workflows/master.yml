@@ -19,11 +19,12 @@ on:
         default: "master"
         type: string
       runner:
-        description: "Specify runner. Defaults to checking visibility"
+        description: "Specify runner for general jobs (tests, codeql, build)"
         required: false
+        default: "general-runner"
         type: string
-      bom_runner:
-        description: "Specify runner for BOM workflows"
+      dependency_track_runner:
+        description: "Specify runner for Dependency Track workflows"
         required: false
         default: "dependency-track-runner"
         type: string
@@ -39,7 +40,7 @@ on:
 jobs:
   detect-project-type:
     if: contains(inputs.workflows_to_run, 'dependency-track') || contains(inputs.workflows_to_run, 'all')
-    runs-on: ${{ inputs.runner || 'general-runner' }}
+    runs-on: ${{ inputs.runner }}
     outputs:
       is_node: ${{ steps.check.outputs.is_node }}
     steps:
@@ -54,7 +55,7 @@ jobs:
 
   detect-yarn4:
     if: contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all')
-    runs-on: ${{ inputs.runner || 'general-runner' }}
+    runs-on: ${{ inputs.runner }}
     outputs:
       use_yarn4: ${{ steps.check.outputs.use_yarn4 }}
     steps:
@@ -71,7 +72,7 @@ jobs:
     if: contains(inputs.workflows_to_run, 'run-tests') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/app-test.yml
     with:
-      runner: ${{ inputs.runner || 'general-runner' }}
+      runner: ${{ inputs.runner }}
 
   #skip if private repo
   codeql-scan:
@@ -80,14 +81,14 @@ jobs:
     with:
       languages: ${{ inputs.languages }}
       build_mode: ${{ inputs.build_mode }}
-      runner: ${{ inputs.runner || 'general-runner' }}
+      runner: ${{ inputs.runner }}
 
   build-check:
     if: contains(inputs.workflows_to_run, 'build-check') || contains(inputs.workflows_to_run, 'all')
     uses: ./.github/workflows/bundlemon-build-size.yml
     with:
       branch_name: ${{ inputs.bundlemonrc_branch_name }}
-      runner: ${{ inputs.runner || 'general-runner' }}
+      runner: ${{ inputs.runner }}
 
   dependency-track-yarn4:
     needs: detect-project-type
@@ -96,7 +97,7 @@ jobs:
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
     with:
-      runner: ${{ inputs.bom_runner }}
+      runner: ${{ inputs.dependency_track_runner }}
 
   dependency-track-syft:
     needs: [detect-project-type, detect-yarn4]
@@ -105,4 +106,4 @@ jobs:
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
     with:
-      runner: ${{ inputs.bom_runner }}
+      runner: ${{ inputs.dependency_track_runner }}
