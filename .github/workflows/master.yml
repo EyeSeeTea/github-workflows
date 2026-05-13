@@ -38,6 +38,22 @@ on:
         required: false
 
 jobs:
+  dtrack-prerequisites:
+    if: contains(inputs.workflows_to_run, 'dependency-track') || contains(inputs.workflows_to_run, 'all')
+    runs-on: ${{ inputs.runner }}
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+        run: |
+          if [ -z "$DTRACK_API_KEY" ]; then
+            echo "enabled=false" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          fi
+
   detect-project-type:
     if: contains(inputs.workflows_to_run, 'dependency-track') || contains(inputs.workflows_to_run, 'all')
     runs-on: ${{ inputs.runner }}
@@ -91,8 +107,8 @@ jobs:
       runner: ${{ inputs.runner }}
 
   dependency-track-yarn4:
-    needs: detect-project-type
-    if: needs.detect-project-type.outputs.is_node == 'true' && (contains(inputs.workflows_to_run, 'dependency-track-yarn4') || contains(inputs.workflows_to_run, 'all'))
+    needs: [dtrack-prerequisites, detect-project-type]
+    if: needs.dtrack-prerequisites.outputs.enabled == 'true' && needs.detect-project-type.outputs.is_node == 'true' && (contains(inputs.workflows_to_run, 'dependency-track-yarn4') || contains(inputs.workflows_to_run, 'all'))
     uses: ./.github/workflows/dependency-track-yarn4.yml
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
@@ -100,8 +116,8 @@ jobs:
       runner: ${{ inputs.dependency_track_runner }}
 
   dependency-track-syft:
-    needs: [detect-project-type, detect-yarn4]
-    if: needs.detect-project-type.outputs.is_node == 'true' && needs.detect-yarn4.outputs.use_yarn4 == 'false' && (contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all'))
+    needs: [dtrack-prerequisites, detect-project-type, detect-yarn4]
+    if: needs.dtrack-prerequisites.outputs.enabled == 'true' && needs.detect-project-type.outputs.is_node == 'true' && needs.detect-yarn4.outputs.use_yarn4 == 'false' && (contains(inputs.workflows_to_run, 'dependency-track-syft') || contains(inputs.workflows_to_run, 'all'))
     uses: ./.github/workflows/dependency-track-syft.yml
     secrets:
       DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
