@@ -1,0 +1,248 @@
+name: Dependency-Track Yarn4 Scan
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Specify runner for the BOM workflow"
+        required: false
+        default: "dependency-track-runner"
+        type: string
+    secrets:
+      DTRACK_API_KEY:
+        required: true
+  workflow_dispatch:
+
+concurrency:
+  group: dtrack-${{ github.workflow }}-yarn4-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-track-yarn4:
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - name: Resolve code scanning target (ref/sha)
+        id: code_scanning_target
+        run: |
+          set -euo pipefail
+          ref="${GITHUB_REF}"
+          sha="${GITHUB_SHA}"
+
+          pr_head_ref="$(jq -r '.pull_request.head.ref // empty' "$GITHUB_EVENT_PATH")"
+          pr_head_sha="$(jq -r '.pull_request.head.sha // empty' "$GITHUB_EVENT_PATH")"
+
+          if [ -n "$pr_head_ref" ] && [ -n "$pr_head_sha" ]; then
+            ref="refs/heads/$pr_head_ref"
+            sha="$pr_head_sha"
+          fi
+
+          echo "code_scanning_ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "code_scanning_sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Resolved code scanning target: ref=$ref sha=$sha"
+
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.code_scanning_target.outputs.code_scanning_sha }}
+
+      - name: Checkout shared workflows repository
+        uses: actions/checkout@v4
+        with:
+          repository: EyeSeeTea/github-workflows
+          ref: feature/add_bom_actions
+          path: shared-workflows
+
+      - name: Read node version (min 20.18.0 for CycloneDX)
+        run: |
+          if [ -f .nvmrc ]; then
+            ver="$(tr -d 'v' < .nvmrc)"
+          else
+            ver="20.18.0"
+          fi
+          min="20.18.0"
+          if [ "$(printf '%s\n' "$ver" "$min" | sort -V | head -n1)" = "$ver" ] && [ "$ver" != "$min" ]; then
+            ver="$min"
+          fi
+          echo "NODE_VERSION=$ver" >> "$GITHUB_ENV"
+
+      - name: Podman pre-flight cleanup
+        run: |
+          podman system migrate
+          podman container prune -f
+
+      - name: Yarn Berry + CycloneDX (container)
+        run: |
+          podman run --rm \
+            --network=host \
+            -v "$GITHUB_WORKSPACE:/work" -w /work \
+            -v /work/node_modules \
+            node:${NODE_VERSION}-bullseye \
+            bash -lc '
+              set -euo pipefail
+              corepack enable
+              yarn set version berry
+              if [ ! -f src/package.json ]; then
+                printf "{\n  \"name\": \"local-src\",\n  \"version\": \"0.0.0\"\n}\n" > src/package.json
+              fi
+              # CycloneDX rejects invalid package names like "$"; strip for BOM generation only.
+              cp package.json /tmp/package.json.orig
+              node -e "const fs=require(\"fs\");const pkg=JSON.parse(fs.readFileSync(\"package.json\",\"utf8\"));if(pkg.dependencies&&pkg.dependencies[\"\\$\"]){delete pkg.dependencies[\"\\$\"];};fs.writeFileSync(\"package.json\",JSON.stringify(pkg,null,2)+\"\\n\");"
+              YARN_ENABLE_SCRIPTS=false yarn install
+              yarn plugin import "https://github.com/CycloneDX/cyclonedx-node-yarn/releases/download/v3.3.1/yarn-plugin-cyclonedx.cjs"
+              yarn cyclonedx --output-file bom_berry.json --output-format JSON
+              mv /tmp/package.json.orig package.json '
+
+      - name: Upload BOM, analyze, and fetch metrics
+        id: dtrack_yarn4
+        env:
+          DTRACK_URL: ${{ vars.DTRACK_URL }}
+          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          bash shared-workflows/scripts/upload_bom_and_fetch_metrics.sh \
+            --bom-file bom_berry.json \
+            --project-suffix berry
+
+      - name: Export SARIF findings (yarn4)
+        env:
+          DTRACK_URL: ${{ vars.DTRACK_URL }}
+          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+          PROJECT_UUID: ${{ steps.dtrack_yarn4.outputs.project_uuid }}
+        run: |
+          set -euo pipefail
+
+          curl -sSf "$DTRACK_URL/api/v1/finding/project/$PROJECT_UUID?suppressed=false" \
+            -H "X-Api-Key: $DTRACK_API_KEY" \
+            -H "Accept: application/sarif+json" \
+            -o dtrack-yarn4.sarif
+
+          test -s dtrack-yarn4.sarif || { echo "::error::dtrack-yarn4.sarif is missing or empty"; exit 1; }
+          jq -e '.runs and (.runs | type == "array")' dtrack-yarn4.sarif >/dev/null
+
+      - name: Export VEX and VDR JSON for SARIF mapping (yarn4)
+        env:
+          DTRACK_URL: ${{ vars.DTRACK_URL }}
+          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+          PROJECT_UUID: ${{ steps.dtrack_yarn4.outputs.project_uuid }}
+        run: |
+          set -euo pipefail
+
+          curl -sSf "$DTRACK_URL/api/v1/vex/cyclonedx/project/$PROJECT_UUID" \
+            -H "X-Api-Key: $DTRACK_API_KEY" \
+            -o vex_yarn4.json
+
+          curl -sSf "$DTRACK_URL/api/v1/bom/cyclonedx/project/$PROJECT_UUID?variant=vdr&format=JSON" \
+            -H "X-Api-Key: $DTRACK_API_KEY" \
+            -o bom_yarn4.json
+
+          test -s vex_yarn4.json || { echo "::error::vex_yarn4.json is missing or empty"; exit 1; }
+          test -s bom_yarn4.json || { echo "::error::bom_yarn4.json is missing or empty"; exit 1; }
+
+      - name: Normalize SARIF for GitHub Code Scanning (yarn4)
+        run: |
+          set -euo pipefail
+
+          python3 shared-workflows/scripts/normalize_sarif.py \
+            --input-sarif dtrack-yarn4.sarif \
+            --output-sarif dtrack-yarn4.sarif \
+            --vdr bom_yarn4.json \
+            --vex vex_yarn4.json \
+            --source yarn4 \
+            --tool-name "OWASP Dependency-Track (yarn4)" \
+            --rule-id-namespace "yarn4::" \
+            --location-mode fallback \
+            --fallback-uri bom.json \
+            --fallback-line 1
+
+          jq -e '.runs[0].results[0].locations[0].physicalLocation.artifactLocation.uri' dtrack-yarn4.sarif >/dev/null
+
+      - name: Upload SARIF to GitHub Code Scanning (yarn4)
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: dtrack-yarn4.sarif
+          category: dependency-track-yarn4
+          ref: ${{ steps.code_scanning_target.outputs.code_scanning_ref }}
+          sha: ${{ steps.code_scanning_target.outputs.code_scanning_sha }}
+
+      - name: Compare with GitHub open alert instances (yarn4)
+        id: open_alerts_yarn4
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TOOL_NAME: OWASP Dependency-Track (yarn4)
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF_NAME: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          bash shared-workflows/scripts/report_open_code_scanning_alert_instances.sh \
+            --repo "$GITHUB_REPOSITORY" \
+            --tool-name "$TOOL_NAME" \
+            --head-ref "refs/heads/${HEAD_REF_NAME:-${GITHUB_REF_NAME}}" \
+            --base-ref "refs/heads/${BASE_REF:-${GITHUB_REF_NAME}}" \
+            --output-prefix "yarn4_open_alerts"
+
+      - name: Report code scanning summary (yarn4)
+        env:
+          OPEN_ALERTS_OUTPUTS_JSON: ${{ toJson(steps.open_alerts_yarn4.outputs) }}
+        run: |
+          set -euo pipefail
+          bash shared-workflows/scripts/report_code_scanning_summary.sh \
+            --sarif-file dtrack-yarn4.sarif \
+            --tool-name "OWASP Dependency-Track (yarn4)" \
+            --summary-title "Dependency-Track Yarn4 code scanning" \
+            --output-prefix yarn4_open_alerts
+
+      - name: Enforce newly introduced vulnerability gate (critical/high)
+        run: |
+          set -euo pipefail
+
+          crit="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_critical_count }}"
+          high="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_high_count }}"
+          med="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_medium_count }}"
+          low="${{ steps.open_alerts_yarn4.outputs.yarn4_open_alerts_introduced_instances_low_count }}"
+          branch_name="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          query="is:open branch:${branch_name} tool:\"OWASP Dependency-Track (yarn4)\""
+          branch_url="https://github.com/${GITHUB_REPOSITORY}/security/code-scanning?query=$(jq -rn --arg value "$query" '$value|@uri')"
+
+          crit="${crit:-0}"
+          high="${high:-0}"
+          med="${med:-0}"
+          low="${low:-0}"
+
+          echo "New alert instances detected vs base (head - base): critical=$crit high=$high medium=$med low=$low"
+
+          if [ "$crit" -gt 0 ] || [ "$high" -gt 0 ]; then
+            echo "::error::New critical/high alert instances detected vs base (critical=$crit, high=$high, medium=$med, low=$low). Review: $branch_url"
+            exit 1
+          fi
+
+          echo "No new critical/high alert instances detected vs base"
+
+      - name: Runner cleanup (always)
+        if: ${{ always() }}
+        run: |
+          set +e
+
+          # Remove generated files from workspace to keep self-hosted runners clean.
+          rm -f \
+            bom_berry.json \
+            bom_yarn4.json \
+            vex_yarn4.json \
+            dtrack-yarn4.sarif \
+            yarn4_open_alerts_report.md \
+            yarn4_open_alerts_counts.tsv \
+            yarn4_open_alerts_details.tsv
+
+          # Best-effort podman cleanup for containers/images created during SBOM generation.
+          podman container prune -f >/dev/null 2>&1 || true
+          podman image prune -f >/dev/null 2>&1 || true
+          podman volume prune -f >/dev/null 2>&1 || true
+
+          # Clean specific directories that accumulate between runs (dependency tree, caches), but preserve workspace structure for post-job cleanup.
+          rm -rf "$GITHUB_WORKSPACE/node_modules" \
+                 "$GITHUB_WORKSPACE/shared-workflows" \
+                 "$GITHUB_WORKSPACE/.yarn"
