@@ -96,6 +96,16 @@ jobs:
               yarn cyclonedx --output-file bom_berry.json --output-format JSON
               mv /tmp/package.json.orig package.json '
 
+      - name: Strip invalid license URLs from BOM (yarn4)
+        run: |
+          set -euo pipefail
+          # Some upstream packages (e.g. findup@0.1.5) declare malformed license URLs
+          # that are not valid RFC 3987 IRIs. Dependency-Track validates these strictly
+          # and rejects the whole BOM with HTTP 400. DT identifies licenses by id/name,
+          # not url, so dropping license.url is lossless for vuln detection.
+          jq 'del(.components[].licenses[]?.license.url)' \
+            bom_berry.json > bom_berry.tmp && mv bom_berry.tmp bom_berry.json
+
       - name: Upload BOM, analyze, and fetch metrics
         id: dtrack_yarn4
         env:
