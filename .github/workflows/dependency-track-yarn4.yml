@@ -53,7 +53,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: EyeSeeTea/github-workflows
-          ref: feature/add_bom_actions
+          ref: master
           path: shared-workflows
 
       - name: Read node version (min 20.18.0 for CycloneDX)
