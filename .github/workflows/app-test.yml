@@ -5,7 +5,7 @@ on:
       runner:
         description: "Specify runner. Defaults to checking visibility"
         required: false
-        default: "ubuntu-latest"
+        default: "general-runner"
         type: string
 
 jobs:
