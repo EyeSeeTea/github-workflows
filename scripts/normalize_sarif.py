@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import re
 import sys
+import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
 DEFAULT_TOOL_PREFIX = "OWASP Dependency-Track"
@@ -17,6 +19,31 @@ DEFAULT_FALLBACK_LINE = 2
 # to the same short preview length.
 DEFAULT_SUMMARY_MAX_LEN = 180
 URI_BASE_ID = "%SRCROOT%"
+
+
+def is_advisory_withdrawn(ghsa_id: str) -> bool:
+    """Ask OSV (no auth needed) if the advisory was withdrawn. On any error, assume it was not."""
+    try:
+        with urllib.request.urlopen(f"https://api.osv.dev/v1/vulns/{ghsa_id}", timeout=15) as response:
+            return json.load(response).get("withdrawn") is not None
+    except (OSError, http.client.HTTPException, ValueError) as exc:
+        print(f"Warning: could not check {ghsa_id}: {exc}", file=sys.stderr)
+        return False
+
+
+def drop_withdrawn_advisories(sarif: Dict[str, Any]) -> List[str]:
+    """Remove results whose GHSA advisory was withdrawn. Returns the dropped IDs."""
+    runs = sarif.get("runs") or []
+    ghsa_ids = {
+        result.get("ruleId")
+        for run in runs
+        for result in run.get("results") or []
+        if str(result.get("ruleId")).startswith("GHSA-")
+    }
+    withdrawn = {ghsa_id for ghsa_id in ghsa_ids if is_advisory_withdrawn(ghsa_id)}
+    for run in runs:
+        run["results"] = [r for r in run.get("results") or [] if r.get("ruleId") not in withdrawn]
+    return sorted(withdrawn)
 
 
 def has_text(value: Any) -> bool:
@@ -643,6 +670,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--drop-withdrawn",
+        action="store_true",
+        help=(
+            "Drop findings whose GHSA advisory was withdrawn, checked via api.osv.dev "
+            "(keeps the finding if the API is unreachable)."
+        ),
+    )
+    parser.add_argument(
         "--pretty-indent",
         type=int,
         default=2,
@@ -666,6 +701,10 @@ def main() -> int:
 
         vdr_doc = load_json(args.vdr) if has_text(args.vdr) else {}
         vex_doc = load_json(args.vex) if has_text(args.vex) else {}
+
+        if args.drop_withdrawn:
+            dropped = drop_withdrawn_advisories(sarif)
+            print(f"Withdrawn advisories dropped: {', '.join(dropped) if dropped else '<none>'}")
 
         updated_rules, updated_results = normalize_sarif(
             sarif=sarif,

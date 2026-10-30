@@ -152,6 +152,7 @@ jobs:
 
           python3 shared-workflows/scripts/normalize_sarif.py \
             --input-sarif dtrack-syft.sarif \
+            --drop-withdrawn \
             --output-sarif dtrack-syft.sarif \
             --vdr vdr_syft.json \
             --vex vex_syft.json \
