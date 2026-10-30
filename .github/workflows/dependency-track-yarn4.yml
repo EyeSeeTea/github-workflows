@@ -85,7 +85,7 @@ jobs:
               set -euo pipefail
               corepack enable
               yarn set version berry
-              if [ ! -f src/package.json ]; then
+              if [ -d src ] && [ ! -f src/package.json ]; then
                 printf "{\n  \"name\": \"local-src\",\n  \"version\": \"0.0.0\"\n}\n" > src/package.json
               fi
               # CycloneDX rejects invalid package names like "$"; strip for BOM generation only.
