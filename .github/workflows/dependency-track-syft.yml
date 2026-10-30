@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   dependency-track-syft:
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ inputs.runner || 'dependency-track-runner' }}
     permissions:
       contents: read
       actions: read
