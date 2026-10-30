@@ -236,6 +236,9 @@ def merge_url_maps(primary: Dict[str, str], secondary: Dict[str, str]) -> Dict[s
 
 
 def advisory_url(rule_id: str, url_map: Dict[str, str], existing: Optional[str]) -> Optional[str]:
+    # DT only gives the generic https://github.com/advisories page for GHSA findings.
+    if rule_id.startswith("GHSA-"):
+        return f"https://github.com/advisories/{rule_id}"
     if has_text(existing):
         return str(existing)
     mapped = url_map.get(rule_id)
