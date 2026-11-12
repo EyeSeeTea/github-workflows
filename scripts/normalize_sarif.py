@@ -23,6 +23,24 @@ def has_text(value: Any) -> bool:
     return value is not None and str(value) != ""
 
 
+def full_package_name(properties: Dict[str, Any]) -> str:
+    """Return the component's complete package name, scope included.
+
+    CycloneDX splits a scoped npm package across two fields: the scope goes in
+    ``group`` and only the bare word in ``name``, so ``@babel/traverse`` arrives as
+    ``group="@babel", name="traverse"``. Reading ``name`` alone reports a different,
+    existing package -- npm really does publish a ``traverse`` -- which sends anyone
+    triaging the finding to the wrong project.
+    """
+    name = str(properties.get("name") or "").strip()
+    group = str(properties.get("group") or "").strip()
+    if not name:
+        return "unknown-package"
+    if not group or name.startswith(f"{group}/"):
+        return name
+    return f"{group}/{name}"
+
+
 def load_json(path: str) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as file_obj:
         data = json.load(file_obj)
@@ -471,7 +489,7 @@ def normalize_sarif(
             original_rule_id = str(result.get("ruleId") or "Dependency-Track finding")
             namespaced_rule_id = f"{rule_id_namespace}{original_rule_id}"
             help_url = advisory_url(original_rule_id, url_by_rule, None)
-            package_name = str(properties.get("name") or "unknown-package")
+            package_name = full_package_name(properties)
             package_version = str(properties.get("version") or "")
 
             message = result.get("message")
