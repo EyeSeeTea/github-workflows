@@ -162,7 +162,7 @@ jobs:
             --fallback-uri bom.json \
             --fallback-line 1
 
-          jq -e '.runs[0].results[0].locations[0].physicalLocation.artifactLocation.uri' dtrack-syft.sarif >/dev/null
+          jq -e '(.runs[0].results | length) == 0 or .runs[0].results[0].locations[0].physicalLocation.artifactLocation.uri' dtrack-syft.sarif >/dev/null
 
       - name: Upload SARIF to GitHub Code Scanning (syft)
         uses: github/codeql-action/upload-sarif@v4
