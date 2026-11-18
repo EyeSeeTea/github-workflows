@@ -80,7 +80,7 @@ jobs:
             --network=host \
             -v "$GITHUB_WORKSPACE:/work" -w /work \
             -v /work/node_modules \
-            node:${NODE_VERSION}-bullseye \
+            node:${NODE_VERSION} \
             bash -lc '
               set -euo pipefail
               corepack enable
